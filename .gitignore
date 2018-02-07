@@ -1,0 +1,6 @@
+personal/*
+datasets/*
+.ipynb*
+.idea
+__pycache__
+kapre.egg-info
