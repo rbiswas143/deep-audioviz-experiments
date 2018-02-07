@@ -11,7 +11,6 @@ audio_path = 'datasets/fma/fma_small'
 
 # Loads FMA small dataset
 def load_fma_tracks(sample_size=2000, sr=44100, num_secs=20, save_dir='cached/fma_small'):
-
     num_frames = int(sr * num_secs)
 
     if not os.path.isdir(save_dir):
@@ -80,7 +79,6 @@ def load_fma_tracks(sample_size=2000, sr=44100, num_secs=20, save_dir='cached/fm
 
 # Loads FMA small dataset and converts it into an mfcc
 def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_dir='cached/fma_small_mfcc'):
-
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     else:
@@ -164,3 +162,9 @@ def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_d
 def split_data(data, ratio=0.8):
     div = int(data.shape[0] * ratio)
     return data[:div], data[div:]
+
+
+# Genre map
+def get_genre_map(return_reverse=False):
+    genres = ['Rock', 'Pop', 'International', 'Instrumental', 'Hip-Hop', 'Folk', 'Experimental', 'Electronic']
+    return genres if not return_reverse else {g: i for i, g in enumerate(genres)}
