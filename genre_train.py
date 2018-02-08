@@ -4,12 +4,12 @@ import numpy as np
 import pandas as pd
 import os
 import pickle
-import sklearn
 
 save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
+norms_save_path = os.path.join(save_dir, 'norms')
 net_save_path = os.path.join(save_dir, 'net')
 
 try:
@@ -34,11 +34,6 @@ for i, idx in enumerate(tracks.index):
 y = np.repeat(y, num_segments, axis=0)
 y_train, y_test = dataset.split_data(y)
 
-# Normalize
-x = x.reshape((x.shape[0], 1))
-x = sklearn.preprocessing.normalize(x)
-x = x.reshape((x.shape[0],))
-
 # Shape for training
 num_frames = int(x.shape[0] / (sample_size * num_segments * mfcc))
 x = x.reshape(sample_size * num_segments, mfcc, num_frames, 1)
@@ -58,6 +53,12 @@ print('Training input shape', x_train.shape)
 print('Training target shape', y_train.shape)
 print('Test input shape', x_test.shape)
 print('Test target shape', y_test.shape)
+
+# Normalize training set
+mean, std = x_train.mean(), x_train.std()
+x_train = (x_train - mean) / std
+with open(norms_save_path, 'wb') as nf:
+    pickle.dump((mean, std), nf)
 
 # Train
 inpdimx = x_train.shape[1]
