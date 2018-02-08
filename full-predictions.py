@@ -1,6 +1,5 @@
 import dataset
 import importlib
-import autoencoders
 import numpy as np
 import pandas as pd
 import os
@@ -11,15 +10,18 @@ import fma_utils
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import json
+import keras
 
 importlib.reload(dataset)
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1'
+save_dir = 'cached/fma_small_mfcc_conv_m6000_fps5'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
+norms_save_path = os.path.join(save_dir, 'norms')
 predictions_save_path = os.path.join(save_dir, 'full_predictions.json')
-net_save_path = os.path.join(save_dir, 'net')
+ae_save_path = os.path.join(save_dir, 'ae')
+encoder_save_path = os.path.join(save_dir, 'encoder')
 
 num_tracks_to_predict = 40
 dim_red_pca = 5
@@ -30,8 +32,10 @@ if os.path.isfile(predictions_save_path):
 
 tracks = pd.read_pickle(tracks_save_path)
 with open(params_save_path, 'rb') as pf:
-    sample_size, sr, num_secs, mfcc, num_segments, save_dir = pickle.load(pf)
-window_size = sr * num_secs
+    sample_size, sr, fps, mfcc, num_segments, save_dir = pickle.load(pf)
+with open(norms_save_path, 'rb') as nf:
+    mean, std = pickle.load(nf)
+window_size = int(sr / fps)
 
 train_idx, test_idx = dataset.split_data(tracks.index)
 
@@ -41,14 +45,14 @@ test_tracks = tracks.loc[test_idx, :].sample(int(num_tracks_to_predict / 2))
 tracks_data = []
 all_data = {
     'sr': sr,
-    'segment_time': num_secs,
+    'fps': fps,
     'mfcc': mfcc,
     'pca_enc_len': dim_red_pca,
     'kmeans_enc_len': dim_red_kmeans,
     'tracks': tracks_data
 }
 
-ae = encoder = None
+encoder = None
 
 encoded = np.array([])
 encoding_length = None
@@ -92,12 +96,9 @@ for mode, indices in enumerate([train_tracks.index, test_tracks.index]):
             converted = librosa.feature.mfcc(y=segment, n_mfcc=mfcc, sr=sr)
             converted_all = np.concatenate((converted_all, converted.reshape(converted.size)))
 
-        # Normalize
-        scaled = sklearn.preprocessing.scale(converted_all)
-
         # Shape for training
-        num_frames = int(scaled.shape[0] / (actual_segments * mfcc))
-        reshaped = scaled.reshape(actual_segments, mfcc, num_frames, 1)
+        num_frames = int(converted_all.shape[0] / (actual_segments * mfcc))
+        reshaped = converted_all.reshape(actual_segments, mfcc, num_frames, 1)
 
         # Pad
         scale = 2 ** 3
@@ -110,11 +111,13 @@ for mode, indices in enumerate([train_tracks.index, test_tracks.index]):
 
         mfcc_new, num_frames_new = x.shape[1], x.shape[2]
 
+        # Normalize
+        x = (x - mean) / std
+
         # Load trained ae
         # ae = keras.models.load_model(net_save_path)
         if encoder is None:
-            ae, encoder = autoencoders.conv_ae(mfcc_new, num_frames_new)
-            ae.load_weights(net_save_path)
+            encoder = keras.models.load_model(encoder_save_path)
 
         # Predict
         y = encoder.predict(x)

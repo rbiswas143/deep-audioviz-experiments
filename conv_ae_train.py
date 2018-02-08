@@ -4,31 +4,27 @@ import numpy as np
 import pandas as pd
 import os
 import pickle
-import sklearn
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1'
+save_dir = 'cached/fma_small_mfcc_conv_m6000_fps5'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
-net_save_path = os.path.join(save_dir, 'net')
+norms_save_path = os.path.join(save_dir, 'norms')
+ae_save_path = os.path.join(save_dir, 'ae')
+encoder_save_path = os.path.join(save_dir, 'encoder')
 
 try:
-    dataset.load_fma(sample_size=6000, save_dir=save_dir, fps=3, num_segments=20)
+    dataset.load_fma(sample_size=6000, save_dir=save_dir, fps=5, num_segments=20)
 except:
     print('Data already loaded')
 
-if os.path.isfile(net_save_path):
+if os.path.isfile(ae_save_path):
     raise Exception('Already trained')
 
 x = np.load(mfcc_save_path)
 tracks = pd.read_pickle(tracks_save_path)
 with open(params_save_path, 'rb') as pf:
     sample_size, sr, fps, mfcc, num_segments, save_dir = pickle.load(pf)
-
-# Normalize
-x = x.reshape((x.shape[0], 1))
-x = sklearn.preprocessing.normalize(x)
-x = x.reshape((x.shape[0],))
 
 # Shape for training
 num_frames = int(x.shape[0] / (sample_size * num_segments * mfcc))
@@ -48,6 +44,12 @@ x_train, x_test = dataset.split_data(x)
 print('Training shape', x_train.shape)
 print('Test shape', x_test.shape)
 
+# Normalize training set
+mean, std = x_train.mean(), x_train.std()
+x_train = (x_train - mean) / std
+with open(norms_save_path, 'wb') as nf:
+    pickle.dump((mean, std), nf)
+
 # Train
 inpdimx = x_train.shape[1]
 inpdimy = x_train.shape[2]
@@ -55,9 +57,10 @@ ae, encoder = autoencoders.conv_ae(inpdimx, inpdimy)
 ae.summary()
 print('Training...')
 ae.fit(x_train, x_train,
-       epochs=20,
+       epochs=30,
        batch_size=128,
        shuffle=True,
        validation_data=(x_test, x_test))
 
-ae.save(net_save_path)
+ae.save(ae_save_path)
+encoder.save(encoder_save_path)
