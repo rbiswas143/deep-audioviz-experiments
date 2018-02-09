@@ -78,7 +78,7 @@ def load_fma_tracks(sample_size=2000, sr=44100, num_secs=20, save_dir='cached/fm
 
 
 # Loads FMA small dataset and converts it into an mfcc
-def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_dir='cached/fma_small_mfcc'):
+def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_dir='cached/fma_small_mfcc', filter_genre=False):
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     else:
@@ -90,6 +90,8 @@ def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_d
     # Get small
     tracks = fma_utils.load(tracks_path)
     small = tracks[tracks['set', 'subset'] <= 'small'].sample(frac=1)
+    if filter_genre:
+        small = small[(small['track', 'genre_top'] == 'Folk') | (small['track', 'genre_top'] == 'Electronic')]
 
     # mfcc of all tracks
     data = np.array([])
@@ -165,6 +167,6 @@ def split_data(data, ratio=0.8):
 
 
 # Genre map
-def get_genre_map(return_reverse=False):
-    genres = ['Rock', 'Pop', 'International', 'Instrumental', 'Hip-Hop', 'Folk', 'Experimental', 'Electronic']
+def get_genre_map(return_reverse=False, filter_genre=False):
+    genres = ['Rock', 'Pop', 'International', 'Instrumental', 'Hip-Hop', 'Folk', 'Experimental', 'Electronic'] if not filter_genre else ['Folk', 'Electronic']
     return genres if not return_reverse else {g: i for i, g in enumerate(genres)}

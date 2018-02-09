@@ -5,7 +5,7 @@ import pandas as pd
 import os
 import pickle
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre'
+save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_nschay'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
@@ -13,7 +13,7 @@ norms_save_path = os.path.join(save_dir, 'norms')
 net_save_path = os.path.join(save_dir, 'net')
 
 try:
-    dataset.load_fma(sample_size=20, save_dir=save_dir, fps=1, num_segments=20)
+    dataset.load_fma(sample_size=20, save_dir=save_dir, fps=1, num_segments=20, filter_genre=True)
 except:
     print('Data already loaded')
 
@@ -26,8 +26,8 @@ with open(params_save_path, 'rb') as pf:
     sample_size, sr, fps, mfcc, num_segments, save_dir = pickle.load(pf)
 
 # Genres
-genre_map = dataset.get_genre_map()
-genre_map_rev = dataset.get_genre_map(return_reverse=True)
+genre_map = dataset.get_genre_map(filter_genre=True)
+genre_map_rev = dataset.get_genre_map(return_reverse=True, filter_genre=True)
 y = np.zeros((tracks.shape[0], len(genre_map)))
 for i, idx in enumerate(tracks.index):
     y[i][genre_map_rev[tracks['track', 'genre_top'][idx]]] = 1
