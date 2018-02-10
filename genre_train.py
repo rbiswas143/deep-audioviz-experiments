@@ -11,9 +11,10 @@ tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
 norms_save_path = os.path.join(save_dir, 'norms')
 net_save_path = os.path.join(save_dir, 'net')
+encoder_save_path = os.path.join(save_dir, 'encoder')
 
 try:
-    dataset.load_fma(sample_size=20, save_dir=save_dir, fps=1, num_segments=20, filter_genre=True)
+    dataset.load_fma(sample_size=1700, save_dir=save_dir, fps=5, num_segments=20, filter_genre=True)
 except:
     print('Data already loaded')
 
@@ -63,7 +64,7 @@ with open(norms_save_path, 'wb') as nf:
 # Train
 inpdimx = x_train.shape[1]
 inpdimy = x_train.shape[2]
-model = classifiers.genre_classifier_conv(inpdimx, inpdimy, len(genre_map))
+model,encoder = classifiers.genre_classifier_conv(inpdimx, inpdimy, len(genre_map))
 model.summary()
 print('Training...')
 model.fit(x_train, y_train,
@@ -73,3 +74,4 @@ model.fit(x_train, y_train,
        validation_data=(x_test, y_test))
 
 model.save(net_save_path)
+encoder.save(encoder_save_path)
