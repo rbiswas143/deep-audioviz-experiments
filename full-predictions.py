@@ -24,8 +24,8 @@ ae_save_path = os.path.join(save_dir, 'ae')
 encoder_save_path = os.path.join(save_dir, 'encoder')
 
 num_tracks_to_predict = 40
-dim_red_pca = 5
-dim_red_kmeans = 5
+dim_red_pca = None
+dim_red_kmeans = None
 
 if os.path.isfile(predictions_save_path):
     Exception('Predictions already saved')
@@ -47,8 +47,6 @@ all_data = {
     'sr': sr,
     'fps': fps,
     'mfcc': mfcc,
-    'pca_enc_len': dim_red_pca,
-    'kmeans_enc_len': dim_red_kmeans,
     'tracks': tracks_data
 }
 
@@ -135,13 +133,19 @@ total_segments = int(encoded.size / encoding_length)
 encoded = encoded.reshape(total_segments, encoding_length)
 
 # Fit PCA for all segments
+if dim_red_pca is None:
+    dim_red_pca = encoding_length
 pca = PCA(n_components=dim_red_pca)
 pca.fit(encoded)
+all_data['pca_enc_len'] = dim_red_pca
 print('Variance retained: {}%'.format(pca.explained_variance_ratio_.sum() * 100))
 
-# Fit PCA for all segments
+# Fit kmeans for all segments
+if dim_red_kmeans is None:
+    dim_red_kmeans = encoding_length
 kmeans = KMeans(n_clusters=dim_red_kmeans, random_state=0)
 kmeans.fit(encoded)
+all_data['kmeans_enc_len'] = dim_red_kmeans
 
 for data in tracks_data:
     y = np.array(data['raw_enc'])
