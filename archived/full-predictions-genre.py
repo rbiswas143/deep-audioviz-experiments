@@ -11,20 +11,20 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import json
 import keras
+import classifiers
 
-importlib.reload(dataset)
-
-save_dir = 'genreTrainedDataWithEncoder'
+save_dir = 'cached/fma_small_mfcc_genre2_w_encoder_2000_5fps'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 params_save_path = os.path.join(save_dir, 'params')
 norms_save_path = os.path.join(save_dir, 'norms')
 predictions_save_path = os.path.join(save_dir, 'full_predictions.json')
 encoder_save_path = os.path.join(save_dir, 'encoder')
+net_save_path = os.path.join(save_dir, 'net')
 
 num_tracks_to_predict = 40
-dim_red_pca = None
-dim_red_kmeans = None
+dim_red_pca = 10
+dim_red_kmeans = 10
 
 if os.path.isfile(predictions_save_path):
     Exception('Predictions already saved')
@@ -114,10 +114,16 @@ for mode, indices in enumerate([train_tracks.index, test_tracks.index]):
         # Load trained ae
         # ae = keras.models.load_model(net_save_path)
         if encoder is None:
-            encoder = keras.models.load_model(encoder_save_path)
+            # encoder = keras.models.load_model(encoder_save_path)
+            model, encoder = classifiers.genre_classifier_conv_all_layers(mfcc_new, num_frames_new,
+                                                                          len(dataset.get_genre_map(filter_genre=True)))
+            model.load_weights(net_save_path)
 
         # Predict
         y = encoder.predict(x)
+        y = np.concatenate((y[0].reshape(actual_segments, -1),
+                            y[1].reshape(actual_segments, -1),
+                            y[2].reshape(actual_segments, -1)), axis=1)
         encoding_length = int(y.size / actual_segments)
         all_data['raw_enc_len'] = encoding_length
 
@@ -140,14 +146,15 @@ all_data['pca_enc_len'] = dim_red_pca
 print('Variance retained: {}%'.format(pca.explained_variance_ratio_.sum() * 100))
 
 # Fit kmeans for all segments
-if dim_red_kmeans is None:
-    dim_red_kmeans = encoding_length
-kmeans = KMeans(n_clusters=dim_red_kmeans, random_state=0)
-kmeans.fit(encoded)
-all_data['kmeans_enc_len'] = dim_red_kmeans
+# if dim_red_kmeans is None:
+#     dim_red_kmeans = encoding_length
+# kmeans = KMeans(n_clusters=dim_red_kmeans, random_state=0)
+# kmeans.fit(encoded)
+# all_data['kmeans_enc_len'] = dim_red_kmeans
 
 for data in tracks_data:
     y = np.array(data['raw_enc'])
+    data['raw_enc'] = None
 
     # Dimension reduction with PCA
     y_pca = pca.transform(y)
@@ -156,12 +163,12 @@ for data in tracks_data:
     data['pca_enc'] = y_pca.tolist()
 
     # Dimension reduction with k-means
-    y_kmeans = kmeans.transform(y)
-    y_kmeans = 1 / (1 + y_kmeans)
-    # Normlaize each sample
-    y_kmeans_scaled = y_kmeans / y_kmeans.sum(axis=1)[:, None]
-    data['kmeans_enc'] = y_kmeans.tolist()
-    data['kmeans_enc_scaled'] = y_kmeans_scaled.tolist()
+    # y_kmeans = kmeans.transform(y)
+    # y_kmeans = 1 / (1 + y_kmeans)
+    # # Normlaize each sample
+    # y_kmeans_scaled = y_kmeans / y_kmeans.sum(axis=1)[:, None]
+    # data['kmeans_enc'] = y_kmeans.tolist()
+    # data['kmeans_enc_scaled'] = y_kmeans_scaled.tolist()
 
 with open(predictions_save_path, 'w') as pf:
     json.dump(all_data, pf)

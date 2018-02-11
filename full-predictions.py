@@ -1,5 +1,4 @@
 import dataset
-import importlib
 import numpy as np
 import pandas as pd
 import os
@@ -11,34 +10,44 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import json
 import keras
+import utils
 
-importlib.reload(dataset)
-
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps5'
+save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_temp2'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
-params_save_path = os.path.join(save_dir, 'params')
-norms_save_path = os.path.join(save_dir, 'norms')
-predictions_save_path = os.path.join(save_dir, 'full_predictions.json')
-ae_save_path = os.path.join(save_dir, 'ae')
+data_prep_params_save_path = os.path.join(save_dir, 'data_prep_params')
+training_params_save_path = os.path.join(save_dir, 'training_params')
 encoder_save_path = os.path.join(save_dir, 'encoder')
+model_save_path = os.path.join(save_dir, 'model')
+predictions_save_path = os.path.join(save_dir, 'full_predictions.json')
 
-num_tracks_to_predict = 40
+mode = 'genre_multi'  # autoencoder, genre, genre_multi
+num_tracks_to_predict = 4
 dim_red_pca = None
-dim_red_kmeans = None
+dim_red_kmeans = 5
+pca_scale_range = (0, 100)
+
+# Load all data
 
 if os.path.isfile(predictions_save_path):
     Exception('Predictions already saved')
 
 tracks = pd.read_pickle(tracks_save_path)
-with open(params_save_path, 'rb') as pf:
-    sample_size, sr, fps, mfcc, num_segments, save_dir = pickle.load(pf)
-with open(norms_save_path, 'rb') as nf:
-    mean, std = pickle.load(nf)
+print('Tracks data loaded. Data size', tracks.shape)
+
+with open(data_prep_params_save_path, 'rb') as pf:
+    data_prep_params = pickle.load(pf)
+num_tracks, sr, fps, num_mfcc, num_segments_per_track, save_dir = data_prep_params
+print('Data prep params loaded', data_prep_params)
+
+with open(training_params_save_path, 'rb') as nf:
+    training_params = pickle.load(nf)
+mean, std, data_split_ratio, num_net_scale_downs = training_params
+print('Training params loaded', training_params)
+
 window_size = int(sr / fps)
 
-train_idx, test_idx = dataset.split_data(tracks.index)
-
+train_idx, test_idx = dataset.split_data(tracks.index, data_split_ratio)
 train_tracks = tracks.loc[train_idx, :].sample(int(num_tracks_to_predict / 2))
 test_tracks = tracks.loc[test_idx, :].sample(int(num_tracks_to_predict / 2))
 
@@ -46,7 +55,7 @@ tracks_data = []
 all_data = {
     'sr': sr,
     'fps': fps,
-    'mfcc': mfcc,
+    'num_mfcc': num_mfcc,
     'tracks': tracks_data
 }
 
@@ -86,28 +95,20 @@ for mode, indices in enumerate([train_tracks.index, test_tracks.index]):
         padded[:loaded.shape[0]] = loaded
 
         # Split tracks
-        reshaped = padded.reshape(actual_segments, window_size)
+        split = padded.reshape(actual_segments, window_size)
 
         # mfcc
         converted_all = np.array([])
-        for segment in reshaped:
-            converted = librosa.feature.mfcc(y=segment, n_mfcc=mfcc, sr=sr)
+        for segment in split:
+            converted = librosa.feature.mfcc(y=segment, n_mfcc=num_mfcc, sr=sr)
             converted_all = np.concatenate((converted_all, converted.reshape(converted.size)))
 
         # Shape for training
-        num_frames = int(converted_all.shape[0] / (actual_segments * mfcc))
-        reshaped = converted_all.reshape(actual_segments, mfcc, num_frames, 1)
+        num_frames = int(converted_all.shape[0] / (actual_segments * num_mfcc))
+        reshaped = converted_all.reshape(actual_segments, num_mfcc, num_frames, 1)
 
         # Pad
-        scale = 2 ** 3
-        pad_frames = (int(num_frames / scale) + 1) * scale - num_frames
-        x_pad_frames = np.zeros((actual_segments, mfcc, pad_frames, 1))
-        x = np.concatenate((reshaped, x_pad_frames), axis=2)
-        pad_mfcc = (int(mfcc / scale) + 1) * scale - mfcc
-        x_pad_mfcc = np.zeros((actual_segments, pad_mfcc, x.shape[2], 1))
-        x = np.concatenate((x, x_pad_mfcc), axis=1)
-
-        mfcc_new, num_frames_new = x.shape[1], x.shape[2]
+        x, num_mfcc_new, num_frames_new = utils.pad_mfccs(reshaped, num_net_scale_downs, actual_segments, num_mfcc, num_frames)
 
         # Normalize
         x = (x - mean) / std
@@ -119,6 +120,15 @@ for mode, indices in enumerate([train_tracks.index, test_tracks.index]):
 
         # Predict
         y = encoder.predict(x)
+        if type(y) is list:
+            print('Multi layer encoder. Layers', len(y))
+            y_all = np.array([])
+            for y_layer in y:
+                y_all = np.concatenate((y_all, y_layer.reshape(-1)))
+            y = y_all
+        else:
+            print('Prediction shape', y.shape)
+
         encoding_length = int(y.size / actual_segments)
         all_data['raw_enc_len'] = encoding_length
 
@@ -149,11 +159,16 @@ all_data['kmeans_enc_len'] = dim_red_kmeans
 
 for data in tracks_data:
     y = np.array(data['raw_enc'])
+    if mode == 'genre_multi':
+        data['raw_enc'] = None
 
     # Dimension reduction with PCA
     y_pca = pca.transform(y)
+    scaler = sklearn.preprocessing.MinMaxScaler(pca_scale_range)
+    scaler.fit(y_pca.reshape(-1, 1))
+    y_pca = scaler.transform(y_pca)
     # Normalize each feature across all samples
-    y_pca = sklearn.preprocessing.normalize(y_pca, axis=0)
+    # y_pca = sklearn.preprocessing.normalize(y_pca, axis=0)
     data['pca_enc'] = y_pca.tolist()
 
     # Dimension reduction with k-means
@@ -163,6 +178,7 @@ for data in tracks_data:
     y_kmeans_scaled = y_kmeans / y_kmeans.sum(axis=1)[:, None]
     data['kmeans_enc'] = y_kmeans.tolist()
     data['kmeans_enc_scaled'] = y_kmeans_scaled.tolist()
+
 
 with open(predictions_save_path, 'w') as pf:
     json.dump(all_data, pf)

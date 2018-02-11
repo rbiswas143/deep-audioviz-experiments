@@ -44,7 +44,7 @@ x = x.reshape(num_tracks * num_segments_per_track, num_mfcc, num_mfcc_frames, 1)
 print('Data reshaped', x.shape)
 
 # Pad
-x, num_mfcc_new, num_mfcc_frames_new = utils.pad_mfccs(x, num_net_scale_downs, num_tracks, num_segments_per_track,
+x, num_mfcc_new, num_mfcc_frames_new = utils.pad_mfccs(x, num_net_scale_downs, num_tracks * num_segments_per_track,
                                                        num_mfcc, num_mfcc_frames)
 
 # Split

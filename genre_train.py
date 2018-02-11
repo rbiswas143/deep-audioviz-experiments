@@ -6,7 +6,7 @@ import os
 import pickle
 import utils
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_temp1'
+save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_temp2'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 data_prep_params_save_path = os.path.join(save_dir, 'data_prep_params')
@@ -45,7 +45,7 @@ x = x.reshape(num_tracks * num_segments_per_track, num_mfcc, num_mfcc_frames, 1)
 print('Data reshaped', x.shape)
 
 # Pad
-x, num_mfcc_new, num_mfcc_frames_new = utils.pad_mfccs(x, num_net_scale_downs, num_tracks, num_segments_per_track,
+x, num_mfcc_new, num_mfcc_frames_new = utils.pad_mfccs(x, num_net_scale_downs, num_tracks * num_segments_per_track,
                                                        num_mfcc, num_mfcc_frames)
 
 # Split
@@ -80,10 +80,10 @@ model.summary()
 
 print('Training...')
 model.fit(x_train, y_train,
-       epochs=30,
-       batch_size=128,
-       shuffle=True,
-       validation_data=(x_test, y_test))
+          epochs=30,
+          batch_size=128,
+          shuffle=True,
+          validation_data=(x_test, y_test))
 
 model.save(model_save_path)
 encoder.save(encoder_save_path)
