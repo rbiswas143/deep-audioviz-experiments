@@ -152,7 +152,7 @@ def load_fma(sample_size=2000, sr=44100, fps=5, mfcc=20, num_segments=50, save_d
     small = small.loc[track_idx, :]
     small.to_pickle(tracks_save_path)
 
-    params_save_path = os.path.join(save_dir, 'params')
+    params_save_path = os.path.join(save_dir, 'data_prep_params')
     params = sample_size, sr, fps, mfcc, num_segments, save_dir
     with open(params_save_path, 'wb') as pf:
         pickle.dump(params, pf)
