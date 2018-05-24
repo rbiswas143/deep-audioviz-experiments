@@ -4,8 +4,8 @@ import os
 import shutil
 import json
 
-all_data_path = 'cached/fma_small_mfcc_conv_m6000_fps5/full_predictions.json'
-export_dir = 'cached/fma_small_mfcc_conv_m6000_fps5'
+all_data_path = 'cached/final_2k_fps5_genre_9/full_predictions.json'
+export_dir = 'cached/final_2k_fps5_genre_9'
 
 with open(all_data_path, 'rb') as dp:
     all_data = json.load(dp)

@@ -12,7 +12,7 @@ import json
 import keras
 import utils
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_temp2'
+save_dir = 'cached/final_2k_fps5_genre_9'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 data_prep_params_save_path = os.path.join(save_dir, 'data_prep_params')
@@ -21,11 +21,11 @@ encoder_save_path = os.path.join(save_dir, 'encoder')
 model_save_path = os.path.join(save_dir, 'model')
 predictions_save_path = os.path.join(save_dir, 'full_predictions.json')
 
-mode = 'genre_multi'  # autoencoder, genre, genre_multi
-num_tracks_to_predict = 4
+mode = 'genre'  # autoencoder, genre, genre_multi
+num_tracks_to_predict = 40
 dim_red_pca = None
-dim_red_kmeans = 5
-pca_scale_range = (0, 100)
+dim_red_kmeans = 2
+pca_scale_range = (0, 1)
 
 # Load all data
 

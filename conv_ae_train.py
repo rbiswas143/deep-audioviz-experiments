@@ -6,7 +6,7 @@ import os
 import pickle
 import utils
 
-save_dir = 'cached/fma_small_mfcc_conv_m10_fps5_test'
+save_dir = 'cached/final_6k_fps5'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 data_prep_params_save_path = os.path.join(save_dir, 'data_prep_params')
@@ -18,7 +18,7 @@ num_net_scale_downs = 3
 data_split_ratio = 0.8
 
 try:
-    dataset.load_fma(sample_size=10, save_dir=save_dir, fps=5, num_segments=20)
+    dataset.load_fma(sample_size=6000, save_dir=save_dir, fps=5, num_segments=20)
 except:
     print('Data already loaded')
 

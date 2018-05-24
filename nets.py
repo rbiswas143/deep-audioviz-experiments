@@ -3,6 +3,9 @@ from keras.models import Model, Sequential
 from keras import regularizers
 import math
 from kapre.time_frequency import Spectrogram
+import numpy as np
+import data_processor as dp
+
 
 # Single layered autoencoder
 def basic_ae(encoding_dim, input_size):
@@ -113,12 +116,13 @@ def conv_ae(inpdimx, inpdimy):
 
     return autoencoder, encoder
 
+
 def kapre_conv_ae(num_frames, n_dft=512, n_hop=256):
     model = Sequential()
     model.add(Spectrogram(n_dft=n_dft, n_hop=n_hop, input_shape=(1, num_frames),
                           return_decibel_spectrogram=True, power_spectrogram=2.0,
                           trainable_kernel=False, name='static_stft'))
-    time_frames = math.ceil(num_frames/n_hop)
+    time_frames = math.ceil(num_frames / n_hop)
     scale_down = 4
     trim_by = time_frames % scale_down
     model.add(Cropping2D(((0, 1), (0, trim_by))))
@@ -153,7 +157,8 @@ from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatt
 from keras.models import Model, Sequential
 from keras import regularizers
 
-def genre_classifier_conv(inpdimx, inpdimy, num_genres, num_encoder=12):
+
+def genre_classifier_conv(inpdimx, inpdimy, num_genres, num_encoder=9):
     inp = Input(shape=(inpdimx, inpdimy, 1))
 
     x = Conv2D(16, (3, 3), activation='relu', padding='same', name='conv_1')(inp)
@@ -174,6 +179,7 @@ def genre_classifier_conv(inpdimx, inpdimy, num_genres, num_encoder=12):
 
     return model, encoder
 
+
 def genre_classifier_conv_all_layers(inpdimx, inpdimy, num_genres):
     inp = Input(shape=(inpdimx, inpdimy, 1))
 
@@ -193,3 +199,53 @@ def genre_classifier_conv_all_layers(inpdimx, inpdimy, num_genres):
                   metrics=['accuracy'])
 
     return model, encoder
+
+
+class AutoEncoder:
+
+    def __init__(self, hyperparams, feature_shape):
+        self.model = self.compile_model(feature_shape)
+
+    def compile_model(self, feature_shape):
+        inpdimx, inpdimy = feature_shape
+        inp = Input(shape=(inpdimx, inpdimy, 1))
+
+        x = Conv2D(16, (3, 3), activation='relu', padding='same')(inp)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        x = Conv2D(4, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        encoded = Conv2D(1, (3, 3), activation='relu', padding='same', activity_regularizer=regularizers.l1(1e-5))(x)
+
+        x = Conv2D(4, (3, 3), activation='relu', padding='same')(encoded)
+        x = UpSampling2D((2, 2))(x)
+        x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+        x = UpSampling2D((2, 2))(x)
+        x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+        x = UpSampling2D((2, 2))(x)
+        decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
+
+        autoencoder = Model(inp, decoded)
+
+        # encoder
+        encoder = Model(inp, encoded)
+
+        autoencoder.compile(optimizer='adadelta',
+                            loss='binary_crossentropy',
+                            metrics=['accuracy'])
+
+        return autoencoder, encoder
+
+    @staticmethod
+    def process_batch(segment_data, segment_indices):
+        return segment_data, segment_data
+
+    def train_with_generator(self, num_epochs, batch_size, train_partitions, cv_partition, intial_epoch=0):
+        gen_train = dp.PartitionBatchGenerator(train_partitions, batch_size, post_process=self.process_batch)
+        cv_partition.load_data()
+        cv_data = self.process_batch(cv_partition.segment_data, cv_partition.segment_indices)
+        self.model.fit_generator(gen_train, epochs=num_epochs, validation_data=cv_data, initial_epoch=intial_epoch)
+
+    def train(self):
+        pass

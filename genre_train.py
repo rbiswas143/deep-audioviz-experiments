@@ -6,7 +6,7 @@ import os
 import pickle
 import utils
 
-save_dir = 'cached/fma_small_mfcc_conv_m6000_fps1_genre_temp2'
+save_dir = 'cached/final_2k_fps5_genre_9'
 mfcc_save_path = os.path.join(save_dir, 'mfcc.npy')
 tracks_save_path = os.path.join(save_dir, 'tracks')
 data_prep_params_save_path = os.path.join(save_dir, 'data_prep_params')
@@ -14,12 +14,12 @@ training_params_save_path = os.path.join(save_dir, 'training_params')
 model_save_path = os.path.join(save_dir, 'model')
 encoder_save_path = os.path.join(save_dir, 'encoder')
 
-num_net_scale_downs = 3
+num_net_scale_downs = 2
 data_split_ratio = 0.8
 multi_layer_encoder = False
 
 try:
-    dataset.load_fma(sample_size=10, save_dir=save_dir, fps=5, num_segments=20, filter_genre=True)
+    dataset.load_fma(sample_size=1800, save_dir=save_dir, fps=5, num_segments=20, filter_genre=True)
 except:
     print('Data already loaded')
 
@@ -72,7 +72,7 @@ y = np.repeat(y, num_segments_per_track, axis=0)
 y_train, y_test = dataset.split_data(y)
 
 # Train
-if multi_layer_encoder:
+if not multi_layer_encoder:
     model, encoder = nets.genre_classifier_conv(num_mfcc_new, num_mfcc_frames_new, len(genre_map))
 else:
     model, encoder = nets.genre_classifier_conv_all_layers(num_mfcc_new, num_mfcc_frames_new, len(genre_map))
@@ -80,7 +80,7 @@ model.summary()
 
 print('Training...')
 model.fit(x_train, y_train,
-          epochs=30,
+          epochs=50,
           batch_size=128,
           shuffle=True,
           validation_data=(x_test, y_test))
