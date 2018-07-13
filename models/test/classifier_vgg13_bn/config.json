@@ -1,10 +1,10 @@
 {
-  "name": "classifier_vgg13_test",
+  "name": "classifier_vgg13_bn_test",
   "num_epochs": 1,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
-  "models_dir": "models/test/classifier_vgg13",
+  "models_dir": "models/test/classifier_vgg13_bn",
   "dataset_path": "datasets/processed/test/mfcc_classifier/mfcc_classifier_test.h5",
   "model": "cnn_classifier",
   "model_params": {
