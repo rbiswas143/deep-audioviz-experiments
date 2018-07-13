@@ -8,10 +8,23 @@ import torch
 import traceback
 
 
-def train_models(train_configs):
+def train_models(train_configs, email=False):
     for i, config in enumerate(train_configs):
         print('\nTraining Model {} of {}: {}'.format(i + 1, len(train_configs), config.name))
-        train.train(config, plot_learning_curves=False, cuda=torch.cuda.is_available())
+        try:
+            train.train(config, plot_learning_curves=False, cuda=torch.cuda.is_available())
+            if email:
+                emailer.sendmail(
+                    'HP Tuning - Model Trained - {}'.format(config.name),
+                    str(config.get_dict())
+                )
+        except Exception as ex:
+            if email:
+                emailer.sendmail(
+                    'HP Tuning - Model Training Failed - {}'.format(config.name),
+                    'Model: {}\n\nError: {}'.format(str(config.get_dict()), traceback.format_exc())
+                )
+            traceback.print_exc()
 
     print('All Models have been evaluated')
 
@@ -69,20 +82,7 @@ if __name__ == '__main__':
 
     # Actions
     if args.mode == 'train':
-        try:
-            train_models(train_configs)
-            if args.email:
-                emailer.sendmail(
-                    'HP Tuning Complete',
-                    'Models Evaluated: {}\nHP Config: {}'.format(len(train_configs), args.config_files_path)
-                )
-        except Exception as ex:
-            if args.email:
-                emailer.sendmail(
-                    'HP Tuning Failed',
-                    'Error: {}'.format(traceback.format_exc())
-                )
-            raise
+        train_models(train_configs, email=args.email)
     elif args.mode == 'report':
         print_evaluation_report(train_configs)
     else:
