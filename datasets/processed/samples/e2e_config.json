@@ -1,0 +1,16 @@
+{
+  "name": "e2e_sample",
+  "fma_audio_dir": "datasets/fma/fma_small",
+  "fma_meta_path": "datasets/fma/fma_metadata/tracks.csv",
+  "fma_type": "small",
+  "num_tracks": 300,
+  "sr": 44100,
+  "datasets_dir": "datasets/processed/e2e_sample",
+  "do_re_sample": true,
+  "test_split": 0.1,
+  "cv_split": 0.1,
+  "num_train_partitions": 3,
+  "scaler": "standard",
+  "segments_per_track": 20,
+  "frames_per_segment": 44100
+}

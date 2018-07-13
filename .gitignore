@@ -1,7 +1,8 @@
-personal/*
-datasets/*
+private/*
+datasets/fma
+datasets/mnist
+*.h5
+*.torch
 .ipynb*
 .idea
 __pycache__
-kapre.egg-info
-mfcc.npy

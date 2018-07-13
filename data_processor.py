@@ -1,9 +1,9 @@
 """ Pre-process and partition the FMA DataSet for later training
     
     Module Contents:
-        A CLI has been provided for partitioning
+        A CLI for creating processed audio partitions
         DataSet partitioning logic and helpers
-        Configuration classes (overridden by JSON config) driving the processing of tracks
+        Configuration classes with default config (overridden by JSON config via CLI) driving the processing of tracks
         Multiple processing modes: End to End (e2e), MFCCs
         Other pre-processing related utilities
         Sanity tests for all functionality
@@ -14,6 +14,7 @@
 """
 
 import fma_utils
+import utils
 
 import librosa
 import numpy as np
@@ -26,37 +27,14 @@ import argparse
 import shutil
 import atexit
 import traceback
+import time
 
 
 ##
 # Config
 ##
 
-
-class DataPrepConfig:
-    """Base config class for all pre-processors"""
-
-    def __init__(self):
-        # self.name = 'data_{0}'.format(int(time.time()))
-        self.name = 'data_fma_small_e2e'
-        self.fma_audio_dir = 'datasets/fma/fma_small'
-        self.fma_meta_path = 'datasets/fma/fma_metadata/tracks.csv'
-        self.fma_type = 'small'  # small/medium
-        self.num_tracks = 7500
-        self.sr = 44100
-        self.datasets_dir = 'cache/datasets_processed'
-        self.do_re_sample = True
-        self.test_split = 0.1
-        self.cv_split = 0.1
-        self.num_train_partitions = 6
-
-    def get_dataset_path(self):
-        return os.path.join(self.datasets_dir, self.name)
-
-    def update(self, dict_):
-        """Overrides config with dictionary"""
-        for key in dict_.keys():
-            setattr(self, key, dict_[key])
+class BaseConfig:
 
     @classmethod
     def load_from_file(cls, path):
@@ -66,9 +44,42 @@ class DataPrepConfig:
             config.update(json.load(cf))
         return config
 
+    def update(self, dict_):
+        """Overrides config with dictionary"""
+        for key in dict_.keys():
+            setattr(self, key, dict_[key])
+
     def get_dict(self):
         """Returns all config as a dictionary"""
         return self.__dict__
+
+
+class DataPrepConfig(BaseConfig):
+    """Base config class for all pre-processors"""
+
+    def __init__(self):
+        self.name = 'data_{0}'.format(int(time.time()))
+        self.fma_audio_dir = 'datasets/fma/fma_small'
+        self.fma_meta_dir = 'datasets/fma/fma_metadata'
+        self.fma_type = 'small'  # small/medium
+        self.num_tracks = 7500
+        self.sr = 44100
+        self.datasets_dir = 'datasets/processed'
+        self.do_re_sample = True
+        self.test_split = 0.1
+        self.cv_split = 0.1
+        self.num_train_partitions = 6
+        self.scaler = 'standard'
+
+    def get_dataset_path(self):
+        return os.path.join(self.datasets_dir, self.name + '.h5')
+
+    @staticmethod
+    def load_from_dataset(path):
+        mode = read_h5_attrib('mode', path)
+        config = get_config_cls(mode)()
+        config.update(read_h5_attrib('config', path, deserialize=True))
+        return config
 
 
 class MfccDataPrepConfig(DataPrepConfig):
@@ -76,10 +87,11 @@ class MfccDataPrepConfig(DataPrepConfig):
 
     def __init__(self):
         DataPrepConfig.__init__(self)
+        self.segments_per_track = None
+        self.frames_per_segment = 90
         self.num_mfcc = 20
-        self.mfcc_frames_per_segment = 90
-        self.segments_per_track = 20
         self.mfcc_hops = 512
+        self.n_fft = 2048
 
 
 class E2eDataPrepConfig(DataPrepConfig):
@@ -87,8 +99,8 @@ class E2eDataPrepConfig(DataPrepConfig):
 
     def __init__(self):
         DataPrepConfig.__init__(self)
-        self.segments_per_track = 20
-        self.frames_per_segment = self.sr * 1
+        self.segments_per_track = None
+        self.frames_per_segment = self.sr * 1  # sec
 
 
 def get_config_cls(mode):
@@ -260,10 +272,16 @@ def cached(func):
 
 
 @cached
-def get_fma_meta(path, fma_type):
+def get_fma_meta(meta_dir, fma_type):
     """Fetches meta data for all tracks of an FMA type as a Pandas DataFrame"""
-    all_tracks = fma_utils.load(path)
+    all_tracks = fma_utils.load(os.path.join(meta_dir, 'tracks.csv'))
     return all_tracks[all_tracks['set', 'subset'] == fma_type]
+
+
+@cached
+def get_fma_genres(meta_dir):
+    """Fetches meta data for all genres as a Pandas DataFrame"""
+    return fma_utils.load(os.path.join(meta_dir, 'genres.csv'))
 
 
 def sample_segments(segments, req_samples):
@@ -272,7 +290,7 @@ def sample_segments(segments, req_samples):
     np.random.shuffle(sample_idx)
     sample_idx = sample_idx[:req_samples]
     sample_idx.sort()
-    return segments[sample_idx, :]
+    return segments[sample_idx]
 
 
 def load_track(path, sr, do_re_sample=True):
@@ -310,8 +328,10 @@ class UtilsTests(unittest.TestCase):
         self.assertIsNot(data1, data3)
 
     def test_get_fma_meta(self):
-        meta_path = 'datasets/fma/fma_metadata/tracks.csv'
-        meta = get_fma_meta(meta_path, 'small')
+        meta_dir = 'datasets/fma/fma_metadata'
+        meta = get_fma_meta(meta_dir, 'small')
+        self.assertIsInstance(meta, pd.DataFrame)
+        meta = get_fma_genres(meta_dir)
         self.assertIsInstance(meta, pd.DataFrame)
 
     def test_load_track(self):
@@ -360,7 +380,35 @@ def pre_process_track_e2e(audio_path, config):
 
 def pre_process_track_mfcc(audio_path, config):
     """Processes an audio track for training in frequency domain using MFCCs
-        Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, mfcc_frames_per_segment)
+        Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, frames_per_segment)
+    """
+    # Load audio data
+    audio_data = load_track(audio_path, config.sr, config.do_re_sample)
+    if audio_data is None:
+        return None
+
+    mfcc = librosa.feature.mfcc(y=audio_data, n_mfcc=config.num_mfcc, sr=config.sr, n_fft=config.n_fft,
+                                hop_length=config.mfcc_hops)
+
+    # Check if sufficient frames are available
+    possible_segments = int(mfcc.shape[1] / config.frames_per_segment)
+    total_segments = possible_segments if config.segments_per_track is None else config.segments_per_track
+    if total_segments > possible_segments:
+        print('Not enough segments {0} for file {1} (Skipping)'.format(possible_segments, audio_path))
+        return
+
+    # Trim and split into segments
+    trimmed = mfcc[:, :possible_segments * config.frames_per_segment]
+    segments = trimmed.reshape(config.num_mfcc, possible_segments, config.frames_per_segment)
+
+    # Rearrange axes and sample segments
+    segments = segments.swapaxes(0, 1)
+    return sample_segments(segments, total_segments)
+
+
+def pre_process_track_mfcc_old(audio_path, config):
+    """Processes an audio track for training in frequency domain using MFCCs
+        Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, frames_per_segment)
     """
     # Load audio data
     audio_data = load_track(audio_path, config.sr, config.do_re_sample)
@@ -443,9 +491,10 @@ class PreProcessTests(unittest.TestCase):
     def test_single_track_mfcc(self):
         config = MfccDataPrepConfig()
         config.segments_per_track = 10
-        config.mfcc_frames_per_segment = 40
+        config.frames_per_segment = 40
         config.num_mfcc = 32
         config.mfcc_hops = 128
+        config.n_fft = 512
         audio_path = fma_utils.get_audio_path(config.fma_audio_dir, self.track_index)
 
         # Fixed no of segments
@@ -469,6 +518,8 @@ def scale_partition_with_standard_scaler(partition, mean, std):
     """Sales a partition with loaded data"""
     if not partition.is_loaded():
         raise Exception('Data for partition {} is not loaded'.format(partition.key))
+    if partition.segment_data.size == 0:
+        return
     data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
     # data -  mean.reshape(1, -1)
     # data = data / std.reshape(1, -1)
@@ -486,6 +537,9 @@ def fit_standard_scaler_on_partitions(partitions, dataset_path):
         total_sum = None
         total_square_sum = None
         for partition in partitions:
+            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
+                print('Ignoring partition:', partition.key)
+                continue
             partition.load_data()
             data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
             count += partition.segment_data.shape[0]
@@ -529,6 +583,9 @@ def fit_minmax_scaler_on_partitions(partitions, dataset_path):
         abs_min = None
         abs_max = None
         for partition in partitions:
+            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
+                print('Ignoring partition:', partition.key)
+                continue
             partition.load_data()
             data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
             if abs_min is None:
@@ -600,12 +657,12 @@ class PartitionScalerTests(unittest.TestCase):
     # @unittest.skip
     def test_standard_scaler(self):
         test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
-        test_data_scaled = test_data - test_data.mean(axis=0)
-        test_data_scaled /= test_data.std(axis=0)
-        pkeys = ['p1', 'p2']
-        pdata = [test_data[0:5, :], test_data[5:10, :]]
+        test_data_scaled = test_data - test_data[:8, :].mean(axis=0)
+        test_data_scaled /= test_data[:8, :].std(axis=0)
+        pkeys = ['p1', 'p2', get_partition_key('cv')]
+        pdata = [test_data[:5, :], test_data[5:8, :], test_data[8:, :]]
         partitions = []
-        for i in range(2):
+        for i in range(3):
             partition = Partition(pkeys[i], np.array([]), self.dataset_path)
             partition.segment_data = pdata[i]
             partition.segment_indices = []
@@ -614,7 +671,7 @@ class PartitionScalerTests(unittest.TestCase):
             partitions.append(partition)
         fit_standard_scaler_on_partitions(partitions, self.dataset_path)
         scaled_data = []
-        for i in range(2):
+        for i in range(3):
             partitions[i].load_data()
             scaled_data.extend(partitions[i].segment_data.tolist())
         scaled_data = np.array(scaled_data).astype(np.float32)
@@ -622,12 +679,12 @@ class PartitionScalerTests(unittest.TestCase):
 
     def test_minmax_scaler(self):
         test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
-        test_data_scaled = test_data - test_data.min(axis=0)
-        test_data_scaled /= (test_data.max(axis=0) - test_data.min(axis=0))
-        pkeys = ['p1', 'p2']
-        pdata = [test_data[0:5, :], test_data[5:10, :]]
+        test_data_scaled = test_data - test_data[:7, :].min(axis=0)
+        test_data_scaled /= (test_data[:7, :].max(axis=0) - test_data[:7, :].min(axis=0))
+        pkeys = ['p1', 'p2', get_partition_key('test')]
+        pdata = [test_data[:5, :], test_data[5:7, :], test_data[7:, :]]
         partitions = []
-        for i in range(2):
+        for i in range(3):
             partition = Partition(pkeys[i], np.array([]), self.dataset_path)
             partition.segment_data = pdata[i]
             partition.segment_indices = []
@@ -636,7 +693,7 @@ class PartitionScalerTests(unittest.TestCase):
             partitions.append(partition)
         fit_minmax_scaler_on_partitions(partitions, self.dataset_path)
         scaled_data = []
-        for i in range(2):
+        for i in range(3):
             partitions[i].load_data()
             scaled_data.extend(partitions[i].segment_data.tolist())
         scaled_data = np.array(scaled_data).astype(np.float32)
@@ -665,11 +722,20 @@ class Partition:
     def process_data(self, mode, config):
         """Start/Resume processing tracks in the current partition"""
 
-        print("Processing {0} tracks in partition {1}".format(len(self.track_indices), self.key))
+        # print()
         done_indices = [] if self.segment_indices is None else set(np.unique(self.segment_indices))
-        self.segment_data = [] if self.segment_data is None else self.segment_data.tolist()
-        self.segment_indices = [] if self.segment_indices is None else self.segment_indices.tolist()
+        if self.segment_data is None:
+            self.segment_data = []
+            self.segment_indices = []
+            self.dirty = True
+        else:
+            self.segment_data = self.segment_data.tolist()
+            self.segment_indices = self.segment_indices.tolist()
 
+        progress = utils.ProgressBar(
+            len(self.track_indices),
+            status="Processing {0} tracks in partition {1}".format(len(self.track_indices), self.key)
+        )
         for curr_track, track_index in enumerate(self.track_indices):
 
             # Track already processed?
@@ -684,8 +750,10 @@ class Partition:
                 self.dirty = True
 
             # Print status
-            if curr_track % 30 == 0:
-                print('Processed {0} of {1} tracks'.format(curr_track + 1, self.track_indices.size))
+            # if curr_track % 30 == 0:
+            #     print('Processed {0} of {1} tracks'.format(curr_track + 1, self.track_indices.size))
+            progress.update(curr_track)
+        progress.complete(status='Partition {} has been processed'.format(self.key))
 
         # Convert processed data to numpy ndarray
         self.segment_data = np.array(self.segment_data).astype(np.float32)
@@ -696,7 +764,7 @@ class Partition:
         if total_tracks_read < len(self.track_indices):
             print('WARNING: Only {0} of {1} files were read'.format(total_tracks_read, len(self.track_indices)))
 
-        print("All tracks processed in partition", self.key)
+        # print("All tracks processed in partition", self.key)
 
     def load_data(self):
         """Load the processed partition data"""
@@ -807,9 +875,10 @@ def get_partition_key(partition_type, partition_num=None):
 
 class PartitionBatchGenerator:
 
-    def __init__(self, partitions, batch_size, post_process=None):
-        self.partitions = partitions
-        self.batch_size = batch_size
+    def __init__(self, partitions, batch_size, mode='train', post_process=None):
+        assert mode in ['train', 'cv']
+        self.partitions = partitions if mode == 'train' else [partitions]
+        self.batch_size = batch_size if batch_size is not None else self.partitions[0].get_num_segments()
         self.post_process = post_process if post_process is not None else lambda *_: _
 
     def __len__(self):
@@ -829,8 +898,9 @@ class PartitionBatchGenerator:
             while curr_batch_start < partition.segment_data.shape[0]:
                 curr_batch_end = min(curr_batch_start + self.batch_size, partition.segment_data.shape[0])
                 curr_batch_segments = partition.segment_data[curr_batch_start: curr_batch_end]
-                curr_batch_indices = partition.segment_indices[curr_batch_start: curr_batch_end]
-                yield self.post_process(curr_batch_segments, curr_batch_indices)
+                curr_batch_segment_indices = partition.segment_indices[curr_batch_start: curr_batch_end]
+                curr_batch_start += self.batch_size
+                yield self.post_process(curr_batch_segments, curr_batch_segment_indices)
             partition.flush_data()
 
 
@@ -932,7 +1002,7 @@ class PartitionTests(unittest.TestCase):
         tracks_to_process = [2]
         config = MfccDataPrepConfig()
         config.segments_per_track = 10
-        config.mfcc_frames_per_segment = 40
+        config.frames_per_segment = 40
         config.num_mfcc = 32
         config.mfcc_hops = 128
 
@@ -961,15 +1031,31 @@ class PartitionTests(unittest.TestCase):
         # Generator length
         batch_size = 2
         gen = PartitionBatchGenerator(parts, batch_size)
+        gen_cv = PartitionBatchGenerator(parts[0], batch_size, mode='cv')
         self.assertEqual(len(gen), 7)
+        self.assertEqual(len(gen_cv), 3)
 
         # Generated data
         count = 0
-        for gen_data, gen_indices in gen:
-            if count >= 2:
+        for gn in [gen, gen_cv]:
+            for gen_data, gen_indices in gn:
+                if count >= 2:
+                    break
+                count += 1
+                self.assertTrue(np.array_equal(gen_data, np.ones(batch_size)))
+
+        # Single Batch
+        batch_size = None
+        gen = PartitionBatchGenerator(parts, batch_size)
+        gen_cv = PartitionBatchGenerator(parts[0], batch_size, mode='cv')
+        self.assertEqual(len(gen), 3)
+        self.assertEqual(len(gen_cv), 1)
+
+        # Generated data
+        for gn in [gen, gen_cv]:
+            for gen_data, gen_indices in gn:
+                self.assertTrue(np.array_equal(gen_data, np.ones(5)))
                 break
-            count += 1
-            self.assertTrue(np.array_equal(gen_data, np.ones(batch_size)))
 
 
 ##
@@ -985,15 +1071,16 @@ def run():
 
     # Arguments Parser
     parser = argparse.ArgumentParser(description='Prepare DataSet Partitions for later training')
-    parser.add_argument('-m', '--mode', choices=['e2e', 'mfcc'], default='e2e', help='Processing Mode')
-    parser.add_argument('-s', '--scaler', choices=['standard', 'minmax'], default='standard', help='Partition Scaler')
+    parser.add_argument('-m', '--mode', choices=['e2e', 'mfcc'], default='mfcc', help='Processing Mode')
+    # parser.add_argument('-s', '--scaler', choices=['standard', 'minmax'], default='standard', help='Partition Scaler')
     parser.add_argument('-c', '--config_path', help='Path to config JSON')
     parser.add_argument('-o', '--override', action='store_true', help='Discard previous processing and start again')
     parser.add_argument('-t', '--tests', action='store_true', help='Run unit tests')
 
     # Parse arguments
     args = parser.parse_args()
-    mode, scaler, config_path, override, tests = args.mode, args.scaler, args.config_path, args.override, args.tests
+    # mode, scaler, config_path, override, tests = args.mode, args.scaler, args.config_path, args.override, args.tests
+    mode, config_path, override, tests = args.mode, args.config_path, args.override, args.tests
     print('Arguments: Mode:{0}\tOverride:{1}\tTest:{2}\tConfig Path:{3}'.format(mode, override, tests, config_path))
 
     # Run tests and exit
@@ -1012,8 +1099,10 @@ def run():
     if dataset_exists and not override:
         mode = read_h5_attrib('mode', config.get_dataset_path())
         config.update(read_h5_attrib('config', config.get_dataset_path(), deserialize=True))
+        # scaler = read_h5_attrib('scaler', config.get_dataset_path())
         print('Read Mode:', mode)
         print('Read Config:', config.get_dict())
+        # print('Read Scaler:', scaler)
     else:
         if dataset_exists:
             print('Deleted existing dataset file')
@@ -1021,6 +1110,7 @@ def run():
         print('Creating new dataset file')
         write_h5_attrib('mode', mode, config.get_dataset_path())
         write_h5_attrib('config', config.get_dict(), config.get_dataset_path(), serialize=True)
+        # write_h5_attrib('scaler', scaler, config.get_dataset_path())
 
     # Load existing partitions from dataset or create new ones
     train_parts, cv_part, test_part = load_created_partitions(config.get_dataset_path())
@@ -1031,7 +1121,7 @@ def run():
         parts.append(test_part)
     if len(parts) == 0:
         print('Creating new partitions')
-        tracks = get_fma_meta(config.fma_meta_path, config.fma_type)
+        tracks = get_fma_meta(config.fma_meta_dir, config.fma_type)
         train_parts, cv_part, test_part = create_partitions(tracks, config.num_tracks, config.num_train_partitions,
                                                             config.cv_split, config.test_split,
                                                             config.get_dataset_path())
@@ -1056,8 +1146,8 @@ def run():
     print('All partitions processed')
 
     # Scale partitions
-    print('Scaling partitions using scaler', scaler)
-    fit_scaler_on_partitions(parts, config.get_dataset_path(), scaler)
+    print('Scaling partitions using scaler', config.scaler)
+    fit_scaler_on_partitions(parts, config.get_dataset_path(), config.scaler)
     print('Done')
 
 

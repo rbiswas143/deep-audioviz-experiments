@@ -1,0 +1,11 @@
+models/test/classifier_alexnet/config.json
+models/test/classifier_vgg11/config.json
+models/test/classifier_vgg11_bn/config.json
+models/test/classifier_vgg13/config.json
+models/test/classifier_vgg13_bn/config.json
+models/test/classifier_vgg16/config.json
+models/test/classifier_vgg16_bn/config.json
+models/test/conv_autoencoder/config.json
+models/test/conv_autoencoder_shared/config.json
+models/test/conv_autoencoder_skip/config.json
+models/test/conv_autoencoder_skip_shared/config.json

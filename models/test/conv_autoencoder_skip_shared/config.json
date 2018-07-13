@@ -1,0 +1,28 @@
+{
+  "name": "conv_ae_test",
+  "num_epochs": 10,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/test/conv_autoencoder",
+  "dataset_path": "datasets/processed/test/mfcc_ae/mfcc_ae_test.h5",
+  "model": "conv_autoencoder",
+  "model_params": {
+    "lr": 0.0019879979081451893,
+    "momentum": 0.95,
+    "input_dims": [
+      64,
+      96
+    ],
+    "enc_len": 10,
+    "num_init_filters": 16,
+    "num_pools": 4,
+    "num_fc": 4,
+    "fc_scale_down": 4,
+    "kernel_size": 5,
+    "padding": 2,
+    "shared_weights": true,
+    "skip_connections": true,
+    "enc_activation": "sigmoid"
+  }
+}

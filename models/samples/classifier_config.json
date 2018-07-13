@@ -1,0 +1,23 @@
+{
+  "name": "vgg16_sample",
+  "num_epochs": 5,
+  "batch_size": 32,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/vgg16_sample",
+  "dataset_path": "datasets/processed/mfcc_sample/mfcc_sample.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "pretrained": true,
+    "num_classes": 8,
+    "lr": 1.1083812751166988e-03,
+    "momentum": 0.9,
+    "batchnorm": true,
+    "arch": "vgg16"
+  }
+}
+               
