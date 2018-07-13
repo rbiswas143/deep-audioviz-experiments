@@ -1,6 +1,6 @@
 {
   "name": "conv_autoencoder_skip_test",
-  "num_epochs": 10,
+  "num_epochs": 1,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
