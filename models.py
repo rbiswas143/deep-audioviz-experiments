@@ -8,6 +8,8 @@ import utils
 import math
 import numpy as np
 
+import alexnet
+
 
 ## Utils
 
@@ -149,19 +151,27 @@ class CNNClassifier(ModelBase):
             model = torchvision.models.vgg16_bn(pretrained=self.pretrained) if self.batchnorm else \
                 torchvision.models.vgg16(pretrained=self.pretrained)
         elif self.arch == 'alexnet':
-            model = torchvision.models.alexnet(pretrained=self.pretrained)
+            model = alexnet.alexnet(pretrained=self.pretrained)
             if self.batchnorm:
                 print('Warning: bathnorm not available for alexnet')
         else:
             raise Exception('Unidentified arch: {}'.format(self.arch))
 
         # Replace first layer
-        model.features = nn.Sequential(*([initialize_weights(nn.Conv2d(1, 64, kernel_size=3, padding=1))]
+        if self.arch == 'alexnet':
+            first_layer = nn.Conv2d(1, 64, kernel_size=11, stride=(1, 2), padding=2)
+        else:
+            first_layer = nn.Conv2d(1, 64, kernel_size=3, padding=1)
+        model.features = nn.Sequential(*([initialize_weights(first_layer)]
                                          + list(model.features.children())[1:]))
 
         # Replace FC layers
+        if self.arch == 'alexnet':
+            fc_dim = 256 * 6 * 4
+        else:
+            fc_dim = 512 * 2 * 3
         model.classifier = nn.Sequential(
-            initialize_weights(nn.Linear(512 * 2 * 3, 4096)),  # Assuming input dims is (64, 96)
+            initialize_weights(nn.Linear(fc_dim, 4096)),  # Assuming input dims is (64, 96)
             nn.ReLU(True),
             nn.Dropout(),
             initialize_weights(nn.Linear(4096, 4096)),
