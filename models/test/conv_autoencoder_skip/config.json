@@ -1,10 +1,10 @@
 {
-  "name": "conv_ae_test",
+  "name": "conv_autoencoder_skip_test",
   "num_epochs": 10,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
-  "models_dir": "models/test/conv_autoencoder",
+  "models_dir": "models/test/conv_autoencoder_skip",
   "dataset_path": "datasets/processed/test/mfcc_ae/mfcc_ae_test.h5",
   "model": "conv_autoencoder",
   "model_params": {

@@ -1,5 +1,5 @@
 {
-  "name": "conv_ae_test",
+  "name": "conv_autoencoder_test",
   "num_epochs": 10,
   "batch_size": 64,
   "resume": true,
