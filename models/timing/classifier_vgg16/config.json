@@ -1,0 +1,23 @@
+{
+  "name": "classifier_vgg16_timing",
+  "num_epochs": 1,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/timing/classifier_vgg16",
+  "dataset_path": "datasets/processed/timing/mfcc_classifier/mfcc_classifier_timing.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "pretrained": true,
+    "num_classes": 8,
+    "lr": 1.1083812751166988e-03,
+    "momentum": 0.9,
+    "batchnorm": false,
+    "arch": "vgg16"
+  }
+}
+               

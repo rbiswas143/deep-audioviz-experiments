@@ -1,0 +1,28 @@
+{
+  "name": "conv_autoencoder_skip_shared_large_timing",
+  "num_epochs": 1,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/timing/conv_autoencoder_skip_shared_large",
+  "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
+  "model": "conv_autoencoder",
+  "model_params": {
+    "lr": 0.0019879979081451893,
+    "momentum": 0.95,
+    "input_dims": [
+      64,
+      96
+    ],
+    "enc_len": 10,
+    "num_init_filters": 64,
+    "num_pools": 5,
+    "num_fc": 5,
+    "fc_scale_down": 2,
+    "kernel_size": 5,
+    "padding": 2,
+    "shared_weights": true,
+    "skip_connections": true,
+    "enc_activation": "sigmoid"
+  }
+}

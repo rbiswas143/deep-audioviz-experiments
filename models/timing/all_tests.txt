@@ -1,0 +1,11 @@
+models/timing/classifier_alexnet/config.json
+models/timing/classifier_vgg11/config.json
+models/timing/classifier_vgg11_bn/config.json
+models/timing/classifier_vgg13/config.json
+models/timing/classifier_vgg13_bn/config.json
+models/timing/classifier_vgg16/config.json
+models/timing/classifier_vgg16_bn/config.json
+models/timing/conv_autoencoder_small/config.json
+models/timing/conv_autoencoder_large/config.json
+models/timing/conv_autoencoder_skip_shared_small/config.json
+models/timing/conv_autoencoder_skip_shared_large/config.json
