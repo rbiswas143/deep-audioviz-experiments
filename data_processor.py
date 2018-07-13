@@ -40,7 +40,7 @@ class BaseConfig:
     def load_from_file(cls, path):
         """Initializes default config and overrides it with config dictionary obtained from a json file"""
         config = cls()
-        with open(path, 'rb') as cf:
+        with open(path, 'r') as cf:
             config.update(json.load(cf))
         return config
 
