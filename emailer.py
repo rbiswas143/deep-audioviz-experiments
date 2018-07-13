@@ -13,7 +13,7 @@ email_config = {
 configured = False
 email_config_file = 'private/email.json'
 if os.path.isfile(email_config_file):
-    with open(email_config_file, 'rb') as cfg_file:
+    with open(email_config_file, 'r') as cfg_file:
         email_config.update(json.load(cfg_file))
     configured = True
 else:
