@@ -69,7 +69,7 @@ class ModelCheckpoint:
         self.cv_accuracies = []
         self.training_times = []
         self.model_specific = self.model.init_checkpoint()
-        self.trainable_params = utils.get_trainable_params(model)
+        self.trainable_params = utils.get_trainable_params(model.model)
         self.loaded = False
 
     def save(self, path):
