@@ -444,8 +444,7 @@ class _ConvAutoencoderModel(nn.Module):
         return x
 
     def forward(self, x):
-        x = self.encode(x)
-        return self.decode_shared_weights(x) if self.shared_weights else self.decode(x)
+        return self.decode(self.encode(x))
 
 
 class ConvAutoencoder(ModelBase):
