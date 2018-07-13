@@ -1,0 +1,19 @@
+{
+  "name": "mfcc_classifier_timing",
+  "fma_audio_dir": "datasets/fma/fma_small",
+  "fma_meta_dir": "datasets/fma/fma_metadata",
+  "fma_type": "small",
+  "num_tracks": 8000,
+  "sr": 44100,
+  "datasets_dir": "datasets/processed/timing/mfcc_classifier",
+  "do_re_sample": true,
+  "test_split": 0.075,
+  "cv_split": 0.075,
+  "num_train_partitions": 1,
+  "scaler": "standard",
+  "segments_per_track": null,
+  "frames_per_segment": 96,
+  "num_mfcc": 64,
+  "mfcc_hops": 441,
+  "n_fft": 1102
+}
