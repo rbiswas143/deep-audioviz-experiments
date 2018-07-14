@@ -1,0 +1,28 @@
+{
+  "name": "conv_ae_shared_small_10",
+  "num_epochs": 5,
+  "batch_size": 32,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_ae/conv_ae_shared_medium/hp_10",
+  "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
+  "model": "conv_autoencoder",
+  "model_params": {
+    "lr": 0.016743043437600136,
+    "momentum": 0.99,
+    "input_dims": [
+      64,
+      96
+    ],
+    "enc_len": 10,
+    "num_init_filters": 64,
+    "num_pools": 4,
+    "num_fc": 4,
+    "fc_scale_down": 8,
+    "kernel_size": 3,
+    "padding": 1,
+    "shared_weights": true,
+    "skip_connections": false,
+    "enc_activation": "sigmoid"
+  }
+}

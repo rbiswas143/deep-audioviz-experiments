@@ -76,17 +76,18 @@ def hp_grid_conv_ae():
     kernel_sizes = np.random.choice([3, 5], size)
     skip_conns = np.random.choice([True, False], size)
 
-    param_range = [4000000, 6000000]
+    param_range = [20000000, 30000000]
 
-    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_small'
+    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_medium'
 
     done = 0
     for i, item in enumerate(
-            zip(lrs, moms, batch_sizes, num_init_filters, num_pools, num_fcs, fc_scale_downs, kernel_sizes, skip_conns)):
-        print(i, item)
+            zip(lrs, moms, batch_sizes, num_init_filters, num_pools, num_fcs, fc_scale_downs, kernel_sizes,
+                skip_conns)):
+        print(i, done, item)
         lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size, skip_conn = item
         data = {
-            "name": "conv_ae_shared_small_{}".format(done + 1),
+            "name": "conv_ae_shared_medium_{}".format(done + 1),
             "num_epochs": 5,
             "batch_size": int(batch_size),
             "resume": True,
