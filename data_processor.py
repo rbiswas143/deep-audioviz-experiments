@@ -29,6 +29,7 @@ import shutil
 import atexit
 import traceback
 import time
+import sys
 
 
 ##
@@ -1168,6 +1169,7 @@ def run():
                 'Config Path: {}\n\nError: {}'.format(config_path, traceback.format_exc())
             )
         traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
