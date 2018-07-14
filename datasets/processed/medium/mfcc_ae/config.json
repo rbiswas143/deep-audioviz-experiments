@@ -1,0 +1,19 @@
+{
+  "name": "mfcc_ae_medium",
+  "fma_audio_dir": "datasets/fma/fma_medium",
+  "fma_meta_dir": "datasets/fma/fma_metadata",
+  "fma_type": "medium",
+  "num_tracks": 17000,
+  "sr": 44100,
+  "datasets_dir": "datasets/processed/medium/mfcc_ae",
+  "do_re_sample": true,
+  "test_split": 0.05,
+  "cv_split": 0.05,
+  "num_train_partitions": 2,
+  "scaler": "minmax",
+  "segments_per_track": null,
+  "frames_per_segment": 96,
+  "num_mfcc": 64,
+  "mfcc_hops": 441,
+  "n_fft": 1102
+}
