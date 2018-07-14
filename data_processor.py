@@ -15,6 +15,7 @@
 
 import fma_utils
 import utils
+import emailer
 
 import librosa
 import numpy as np
@@ -1072,16 +1073,17 @@ def run():
     # Arguments Parser
     parser = argparse.ArgumentParser(description='Prepare DataSet Partitions for later training')
     parser.add_argument('-m', '--mode', choices=['e2e', 'mfcc'], default='mfcc', help='Processing Mode')
-    # parser.add_argument('-s', '--scaler', choices=['standard', 'minmax'], default='standard', help='Partition Scaler')
     parser.add_argument('-c', '--config_path', help='Path to config JSON')
     parser.add_argument('-o', '--override', action='store_true', help='Discard previous processing and start again')
     parser.add_argument('-t', '--tests', action='store_true', help='Run unit tests')
+    parser.add_argument('-e', '--email', action='store_true', help='Send emails')
 
     # Parse arguments
     args = parser.parse_args()
     # mode, scaler, config_path, override, tests = args.mode, args.scaler, args.config_path, args.override, args.tests
-    mode, config_path, override, tests = args.mode, args.config_path, args.override, args.tests
-    print('Arguments: Mode:{0}\tOverride:{1}\tTest:{2}\tConfig Path:{3}'.format(mode, override, tests, config_path))
+    mode, config_path, override, tests, email = args.mode, args.config_path, args.override, args.tests, args.email
+    print('Arguments: Mode:{0}\tOverride:{1}\tTest:{2}\tEmail:{3}\tConfig Path:{4}'
+          .format(mode, override, tests, email, config_path))
 
     # Run tests and exit
     if tests:
@@ -1090,65 +1092,77 @@ def run():
         unittest.TextTestRunner().run(suite)
         return
 
-    # Load pre-processing specific default config and override with json config
-    config = get_config_cls(mode)() if config_path is None else get_config_cls(mode).load_from_file(config_path)
+    try:
+        # Load pre-processing specific default config and override with json config
+        config = get_config_cls(mode)() if config_path is None else get_config_cls(mode).load_from_file(config_path)
 
-    # Create or Load dataset file
-    dataset_exists = os.path.isfile(config.get_dataset_path())
-    print('Dataset already exists?', dataset_exists)
-    if dataset_exists and not override:
-        mode = read_h5_attrib('mode', config.get_dataset_path())
-        config.update(read_h5_attrib('config', config.get_dataset_path(), deserialize=True))
-        # scaler = read_h5_attrib('scaler', config.get_dataset_path())
-        print('Read Mode:', mode)
-        print('Read Config:', config.get_dict())
-        # print('Read Scaler:', scaler)
-    else:
-        if dataset_exists:
-            print('Deleted existing dataset file')
-            os.unlink(config.get_dataset_path())
-        print('Creating new dataset file')
-        write_h5_attrib('mode', mode, config.get_dataset_path())
-        write_h5_attrib('config', config.get_dict(), config.get_dataset_path(), serialize=True)
-        # write_h5_attrib('scaler', scaler, config.get_dataset_path())
+        # Create or Load dataset file
+        dataset_exists = os.path.isfile(config.get_dataset_path())
+        print('Dataset already exists?', dataset_exists)
+        if dataset_exists and not override:
+            mode = read_h5_attrib('mode', config.get_dataset_path())
+            config.update(read_h5_attrib('config', config.get_dataset_path(), deserialize=True))
+            print('Read Mode:', mode)
+            print('Read Config:', config.get_dict())
+            # print('Read Scaler:', scaler)
+        else:
+            if dataset_exists:
+                print('Deleted existing dataset file')
+                os.unlink(config.get_dataset_path())
+            print('Creating new dataset file')
+            write_h5_attrib('mode', mode, config.get_dataset_path())
+            write_h5_attrib('config', config.get_dict(), config.get_dataset_path(), serialize=True)
 
-    # Load existing partitions from dataset or create new ones
-    train_parts, cv_part, test_part = load_created_partitions(config.get_dataset_path())
-    parts = train_parts[:]
-    if cv_part is not None:
-        parts.append(cv_part)
-    if test_part is not None:
-        parts.append(test_part)
-    if len(parts) == 0:
-        print('Creating new partitions')
-        tracks = get_fma_meta(config.fma_meta_dir, config.fma_type)
-        train_parts, cv_part, test_part = create_partitions(tracks, config.num_tracks, config.num_train_partitions,
-                                                            config.cv_split, config.test_split,
-                                                            config.get_dataset_path())
-        parts = train_parts + [cv_part, test_part]
+        # Load existing partitions from dataset or create new ones
+        train_parts, cv_part, test_part = load_created_partitions(config.get_dataset_path())
+        parts = train_parts[:]
+        if cv_part is not None:
+            parts.append(cv_part)
+        if test_part is not None:
+            parts.append(test_part)
+        if len(parts) == 0:
+            print('Creating new partitions')
+            tracks = get_fma_meta(config.fma_meta_dir, config.fma_type)
+            train_parts, cv_part, test_part = create_partitions(tracks, config.num_tracks, config.num_train_partitions,
+                                                                config.cv_split, config.test_split,
+                                                                config.get_dataset_path())
+            parts = train_parts + [cv_part, test_part]
+            for part in parts:
+                part.save()
+
+        # Start/Resume processing
+        print('Processing partitions data')
         for part in parts:
-            part.save()
+            def _save_on_exit():
+                print("Saving unsaved changes in Partition: {0} before exiting".format(part.key))
+                part.save()
+                print('Save complete')
 
-    # Start/Resume processing
-    print('Processing partitions data')
-    for part in parts:
-        def _save_on_exit():
-            print("Saving unsaved changes in Partition: {0} before exiting".format(part.key))
-            part.save()
-            print('Save complete')
+            atexit.register(_save_on_exit)
+            part.load_data()
+            part.process_data(mode, config)
+            part.flush_data()
+            atexit.unregister(_save_on_exit)
 
-        atexit.register(_save_on_exit)
-        part.load_data()
-        part.process_data(mode, config)
-        part.flush_data()
-        atexit.unregister(_save_on_exit)
+        print('All partitions processed')
 
-    print('All partitions processed')
+        # Scale partitions
+        print('Scaling partitions using scaler', config.scaler)
+        fit_scaler_on_partitions(parts, config.get_dataset_path(), config.scaler)
+        print('Done')
 
-    # Scale partitions
-    print('Scaling partitions using scaler', config.scaler)
-    fit_scaler_on_partitions(parts, config.get_dataset_path(), config.scaler)
-    print('Done')
+        if email:
+            emailer.sendmail(
+                'Data Processing Complete: {}'.format(config.name),
+                str(config.get_dict())
+            )
+    except:
+        if email:
+            emailer.sendmail(
+                'Data Processing Failed',
+                'Config Path: {}\n\nError: {}'.format(config_path, traceback.format_exc())
+            )
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
