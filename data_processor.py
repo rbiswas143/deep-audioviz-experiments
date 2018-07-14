@@ -388,8 +388,13 @@ def pre_process_track_mfcc(audio_path, config):
     if audio_data is None:
         return None
 
-    mfcc = librosa.feature.mfcc(y=audio_data, n_mfcc=config.num_mfcc, sr=config.sr, n_fft=config.n_fft,
-                                hop_length=config.mfcc_hops)
+    try:
+        mfcc = librosa.feature.mfcc(y=audio_data, n_mfcc=config.num_mfcc, sr=config.sr, n_fft=config.n_fft,
+                                    hop_length=config.mfcc_hops)
+    except Exception as ex:
+        print("Error processing audio file (Skipping): ", audio_path)
+        traceback.print_exc()
+        return None
 
     # Check if sufficient frames are available
     possible_segments = int(mfcc.shape[1] / config.frames_per_segment)
