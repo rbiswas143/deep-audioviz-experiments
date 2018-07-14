@@ -65,7 +65,7 @@ def hp_grid_vgg16():
 
 def hp_grid_conv_ae():
     needed = 10
-    size = 100
+    size = 500
     lrs = 10 ** np.random.uniform(-4.5, -0.5, size).astype(np.float32)
     moms = np.random.choice([0.9, 0.95, 0.99], size)
     batch_sizes = np.random.choice([32, 64, 64, 128], size)
@@ -74,24 +74,26 @@ def hp_grid_conv_ae():
     num_fcs = np.random.choice([2, 3, 4], size)
     fc_scale_downs = np.random.choice([2, 4, 8, 16], size)
     kernel_sizes = np.random.choice([3, 5], size)
+    skip_conns = np.random.choice([True, False], size)
 
-    max_params = 5000000
+    param_range = [4000000, 6000000]
 
-    hp_tune_dir = 'models/conv_ae_hp_tuning_skip_shared'
+    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_small'
 
     done = 0
     for i, item in enumerate(
-            zip(lrs, moms, batch_sizes, num_init_filters, num_pools, num_fcs, fc_scale_downs, kernel_sizes)):
+            zip(lrs, moms, batch_sizes, num_init_filters, num_pools, num_fcs, fc_scale_downs, kernel_sizes, skip_conns)):
         print(i, item)
-        lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size = item
+        lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size, skip_conn = item
         data = {
-            "name": "conv_ae_skip_shared_{}".format(done + 1),
-            "num_epochs": 10,
+            "name": "conv_ae_shared_small_{}".format(done + 1),
+            "num_epochs": 5,
             "batch_size": int(batch_size),
             "resume": True,
+            "ignore": False,
             "models_dir": os.path.join(hp_tune_dir, 'hp_{}'.format(done + 1)),
-            "dataset_path": "datasets/processed/mfcc_ae_fma_small_full/mfcc_ae_fma_small_full",
-            "model": "conv_ae",
+            "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
+            "model": "conv_autoencoder",
             "model_params": {
                 "lr": float(lr),
                 "momentum": float(mom),
@@ -104,7 +106,7 @@ def hp_grid_conv_ae():
                 "kernel_size": int(kernel_size),
                 "padding": int(kernel_size / 2),
                 "shared_weights": True,
-                "skip_connections": True,
+                "skip_connections": bool(skip_conn),
                 "enc_activation": "sigmoid"
             }
         }
@@ -117,8 +119,9 @@ def hp_grid_conv_ae():
             continue
 
         num_params = utils.get_trainable_params(model.model)
-        if num_params > max_params:
-            print('Too many params', num_params)
+        if not param_range[0] <= num_params <= param_range[1]:
+            print('Params not in range', num_params)
+            continue
 
         os.makedirs(os.path.join(hp_tune_dir, 'hp_{}'.format(done + 1)), exist_ok=True)
         with open(os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(done + 1)), 'w') as cfile:
