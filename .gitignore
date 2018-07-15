@@ -3,6 +3,7 @@ datasets/fma
 datasets/mnist
 *.h5
 *.torch
+!*.checkpoint*.torch
 .ipynb*
 .idea
 __pycache__
