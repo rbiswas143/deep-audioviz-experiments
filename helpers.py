@@ -40,21 +40,28 @@ def hp_grid_vgg16():
         print(i, item)
         lr, mom, bn, batch_size = item
         data = {
-            "name": "vgg16_reduced_dims_hp_{}".format(i + 1),
-            "num_epochs": 15,
+            "name": "vgg13_hp_{}".format(i + 1),
+            "num_epochs": 5,
             "batch_size": batch_size,
             "resume": True,
+            "ignore": False,
             "models_dir": os.path.join(hp_tune_dir, 'hp_{}'.format(i + 1)),
-            "dataset_path": "datasets/processed/mfcc_vgg16_fma_small_full/mfcc_vgg16_fma_small_full",
-            "model": "VGG16_reduced",
+            "dataset_path": "datasets/processed/timing/mfcc_classifier/mfcc_classifier_timing.h5",
+            "model": "cnn_classifier",
             "model_params": {
+                "input_dims": [
+                    64,
+                    96
+                ],
                 "num_classes": 8,
                 "pretrained": True,
                 "lr": lr,
                 "momentum": mom,
-                "batchnorm": bn
+                "batchnorm": bn,
+                "arch": "vgg13"
             }
         }
+
         os.makedirs(os.path.join(hp_tune_dir, 'hp_{}'.format(i + 1)), exist_ok=True)
         with open(os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)), 'w') as cfile:
             json.dump(data, cfile)
