@@ -83,6 +83,21 @@ def plot_learning_curve(data_a, data_b, title='Learning Curve', x_label='Epoch',
     plt.show(block=block)
 
 
+def save_learning_curve(data_a, data_b, path, title='Learning Curve', x_label='Epoch', y_label='Loss', legend_a='Train',
+                        legend_b='CV'):
+    data_a = np.array(data_a).reshape(-1)
+    plt.plot(np.arange(1, data_a.size + 1), data_a, label=legend_a)
+    if data_b is not None:
+        data_b = np.array(data_b).reshape(-1)
+        plt.plot(np.arange(1, data_a.size + 1), data_b, label=legend_b)
+    plt.legend(loc='upper right')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    plt.savefig(path)
+    plt.close()
+
+
 def get_trainable_params(model):
     count = 0
     for param in list(model.parameters()):
