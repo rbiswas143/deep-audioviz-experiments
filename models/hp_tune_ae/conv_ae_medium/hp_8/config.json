@@ -1,0 +1,28 @@
+{
+  "name": "conv_ae_medium_8",
+  "num_epochs": 5,
+  "batch_size": 32,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_ae/conv_ae_medium/hp_8",
+  "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
+  "model": "conv_autoencoder",
+  "model_params": {
+    "lr": 0.0014778238255530596,
+    "momentum": 0.95,
+    "input_dims": [
+      64,
+      96
+    ],
+    "enc_len": 10,
+    "num_init_filters": 32,
+    "num_pools": 5,
+    "num_fc": 3,
+    "fc_scale_down": 16,
+    "kernel_size": 5,
+    "padding": 2,
+    "shared_weights": false,
+    "skip_connections": true,
+    "enc_activation": "sigmoid"
+  }
+}

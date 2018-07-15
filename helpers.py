@@ -85,7 +85,7 @@ def hp_grid_conv_ae():
 
     param_range = [20000000, 30000000]
 
-    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_medium'
+    hp_tune_dir = 'models/hp_tune_ae/conv_ae_medium'
 
     done = 0
     for i, item in enumerate(
@@ -94,7 +94,7 @@ def hp_grid_conv_ae():
         print(i, done, item)
         lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size, skip_conn = item
         data = {
-            "name": "conv_ae_shared_medium_{}".format(done + 1),
+            "name": "conv_ae_medium_{}".format(done + 1),
             "num_epochs": 5,
             "batch_size": int(batch_size),
             "resume": True,
@@ -113,7 +113,7 @@ def hp_grid_conv_ae():
                 "fc_scale_down": int(fc_scale_down),
                 "kernel_size": int(kernel_size),
                 "padding": int(kernel_size / 2),
-                "shared_weights": True,
+                "shared_weights": False,
                 "skip_connections": bool(skip_conn),
                 "enc_activation": "sigmoid"
             }
