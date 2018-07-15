@@ -34,7 +34,7 @@ def hp_grid_vgg16():
     bns = np.random.choice(['true', 'false'], size)
     batch_sizes = np.random.choice([32, 64, 64, 128], size)
 
-    hp_tune_dir = 'models/vgg16_hp_tuning_full'
+    hp_tune_dir = 'models/hp_tune_classifier/vgg13'
 
     for i, item in enumerate(zip(lrs, moms, bns, batch_sizes)):
         print(i, item)
