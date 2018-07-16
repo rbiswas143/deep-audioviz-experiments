@@ -1,1 +1,22 @@
-{"name": "vgg13_hp_10", "num_epochs": 5, "batch_size": 64, "resume": true, "ignore": false, "models_dir": "models/hp_tune_classifier/vgg13/hp_10", "dataset_path": "datasets/processed/timing/mfcc_classifier/mfcc_classifier_timing.h5", "model": "cnn_classifier", "model_params": {"input_dims": [64, 96], "num_classes": 8, "pretrained": true, "lr": 0.05317256599664688, "momentum": 0.9, "batchnorm": "true", "arch": "vgg13"}}
+{
+  "name": "vgg13_hp_10",
+  "num_epochs": 5,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_classifier/vgg13/hp_10",
+  "dataset_path": "datasets/processed/timing/mfcc_classifier/mfcc_classifier_timing.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "num_classes": 8,
+    "pretrained": true,
+    "lr": 0.05317256599664688,
+    "momentum": 0.9,
+    "batchnorm": "true",
+    "arch": "vgg13"
+  }
+}
