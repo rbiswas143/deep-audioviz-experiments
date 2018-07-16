@@ -64,7 +64,7 @@ def hp_grid_vgg16():
 
         os.makedirs(os.path.join(hp_tune_dir, 'hp_{}'.format(i + 1)), exist_ok=True)
         with open(os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)), 'w') as cfile:
-            json.dump(data, cfile)
+            json.dump(data, cfile, indent=2)
     configs = [os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)) for i in range(size)]
     with open(os.path.join(hp_tune_dir, 'hp_config.txt'), 'w') as cfile:
         cfile.write('\n'.join(configs))
