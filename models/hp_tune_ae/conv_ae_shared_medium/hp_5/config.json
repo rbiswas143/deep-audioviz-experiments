@@ -1,9 +1,9 @@
 {
   "name": "conv_ae_shared_small_5",
-  "num_epochs": 15,
+  "num_epochs": 10,
   "batch_size": 32,
   "resume": true,
-  "ignore": true,
+  "ignore": false,
   "models_dir": "models/hp_tune_ae/conv_ae_shared_medium/hp_5",
   "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
   "model": "conv_autoencoder",

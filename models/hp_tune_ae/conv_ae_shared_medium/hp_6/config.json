@@ -1,6 +1,6 @@
 {
   "name": "conv_ae_shared_small_6",
-  "num_epochs": 15,
+  "num_epochs": 25,
   "batch_size": 64,
   "resume": true,
   "ignore": false,

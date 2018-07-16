@@ -3,7 +3,7 @@
   "num_epochs": 10,
   "batch_size": 128,
   "resume": true,
-  "ignore": false,
+  "ignore": true,
   "models_dir": "models/hp_tune_ae/conv_ae_shared_medium/hp_3",
   "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
   "model": "conv_autoencoder",
