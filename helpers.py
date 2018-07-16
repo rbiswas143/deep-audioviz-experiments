@@ -71,21 +71,22 @@ def hp_grid_vgg16():
 
 
 def hp_grid_conv_ae():
-    needed = 10
+    needed = 8
     size = 500
+
     lrs = 10 ** np.random.uniform(-4, -2, size).astype(np.float32)
     moms = np.random.choice([0.9, 0.95, 0.99], size)
     batch_sizes = np.random.choice([32, 64], size)
     num_init_filters = np.random.choice([16, 32, 32], size)
     num_pools = np.random.choice([4], size)
-    num_fcs = np.random.choice([2, 2, 3], size)
-    fc_scale_downs = np.random.choice([2, 2, 4, 8, 16, 16], size)
-    kernel_sizes = np.random.choice([3, 5, 5], size)
-    skip_conns = np.random.choice([True, True, False], size)
+    num_fcs = np.random.choice([2, 2, 3, 4], size)
+    fc_scale_downs = np.random.choice([2, 4, 4, 8, 8, 16], size)
+    kernel_sizes = np.random.choice([3, 5], size)
+    skip_conns = np.random.choice([False], size)
 
     param_range = [20000000, 30000000]
 
-    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_medium_2'
+    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_medium_final'
 
     done = 0
     for i, item in enumerate(
@@ -94,7 +95,7 @@ def hp_grid_conv_ae():
         print(i, done, item)
         lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size, skip_conn = item
         data = {
-            "name": "conv_ae_shared_medium_2_{}".format(done + 1),
+            "name": "conv_ae_shared_medium_final_{}".format(done + 1),
             "num_epochs": 5,
             "batch_size": int(batch_size),
             "resume": True,
@@ -128,7 +129,7 @@ def hp_grid_conv_ae():
 
         num_params = utils.get_trainable_params(model.model)
         if not param_range[0] <= num_params <= param_range[1]:
-            print('Params not in range', num_params)
+            print('Params not in range', num_params, 'less' if param_range[0] > num_params else 'more')
             continue
 
         os.makedirs(os.path.join(hp_tune_dir, 'hp_{}'.format(done + 1)), exist_ok=True)
