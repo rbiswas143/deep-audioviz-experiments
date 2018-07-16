@@ -42,7 +42,7 @@ def hp_grid_vgg16():
         data = {
             "name": "vgg13_hp_{}".format(i + 1),
             "num_epochs": 5,
-            "batch_size": batch_size,
+            "batch_size": int(batch_size),
             "resume": True,
             "ignore": False,
             "models_dir": os.path.join(hp_tune_dir, 'hp_{}'.format(i + 1)),
@@ -55,8 +55,8 @@ def hp_grid_vgg16():
                 ],
                 "num_classes": 8,
                 "pretrained": True,
-                "lr": lr,
-                "momentum": mom,
+                "lr": float(lr),
+                "momentum": float(mom),
                 "batchnorm": bn,
                 "arch": "vgg13"
             }
@@ -66,7 +66,7 @@ def hp_grid_vgg16():
         with open(os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)), 'w') as cfile:
             json.dump(data, cfile)
     configs = [os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)) for i in range(size)]
-    with open(os.path.join(hp_tune_dir, 'hp_{}/hp_config.txt'), 'w') as cfile:
+    with open(os.path.join(hp_tune_dir, 'hp_config.txt'), 'w') as cfile:
         cfile.write('\n'.join(configs))
 
 

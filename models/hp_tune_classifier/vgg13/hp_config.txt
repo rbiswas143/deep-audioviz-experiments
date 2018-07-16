@@ -1,0 +1,10 @@
+models/hp_tune_classifier/vgg13/hp_1/config.json
+models/hp_tune_classifier/vgg13/hp_2/config.json
+models/hp_tune_classifier/vgg13/hp_3/config.json
+models/hp_tune_classifier/vgg13/hp_4/config.json
+models/hp_tune_classifier/vgg13/hp_5/config.json
+models/hp_tune_classifier/vgg13/hp_6/config.json
+models/hp_tune_classifier/vgg13/hp_7/config.json
+models/hp_tune_classifier/vgg13/hp_8/config.json
+models/hp_tune_classifier/vgg13/hp_9/config.json
+models/hp_tune_classifier/vgg13/hp_10/config.json
