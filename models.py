@@ -99,6 +99,9 @@ class ModelCheckpoint:
         self.model_specific = config_dict['model_specific']
         self.loaded = True
 
+    def get_dict(self):
+        return self.__dict__
+
 
 ## VGG / Alex Net
 

@@ -47,89 +47,111 @@ class TrainingConfig(dp.BaseConfig):
             raise Exception('Invalid path_type: {}'.format(path_type))
 
 
-def train(training_config, plot_learning_curves=False, cuda=False):
+def train(training_config, plot_learning_curves=False, cuda=False, email=False):
     print('Training model {} [CUDA = {}, Plot = {}]'.format(training_config.name, cuda, plot_learning_curves))
 
-    if training_config.ignore:
-        print('Ignoring model')
-        return
+    try:
 
-    # Model initialization
-    model = training_config.get_by_model_key(cuda)
+        if training_config.ignore:
+            print('Ignoring model')
+            return
 
-    # Load checkpoint
-    checkpoint = models.ModelCheckpoint(model)
-    print('Model Size: {} params'.format(checkpoint.trainable_params))
-    if training_config.resume:
-        model.load_state(training_config.get_model_path('state'))
-        checkpoint.load(training_config.get_model_path('checkpoint'))
+        # Model initialization
+        model = training_config.get_by_model_key(cuda)
 
-    # Data generators for Training and Validation sets
-    train_parts, cv_part, test_part = dp.load_created_partitions(training_config.dataset_path)
-    if len(train_parts) == 0:
-        raise Exception('No training partitions found')
-    training_set = dp.PartitionBatchGenerator(train_parts, training_config.batch_size, mode='train')
-    training_set_len = len(training_set)
-    cv_set = dp.PartitionBatchGenerator(cv_part, training_config.batch_size, mode='cv')
-    cv_set_len = len(cv_set)
+        # Load checkpoint
+        checkpoint = models.ModelCheckpoint(model)
+        print('Model Size: {} params'.format(checkpoint.trainable_params))
+        if training_config.resume:
+            model.load_state(training_config.get_model_path('state'))
+            checkpoint.load(training_config.get_model_path('checkpoint'))
 
-    # Training loop
-    for curr_epoch in range(checkpoint.epoch, training_config.num_epochs):
+        # Data generators for Training and Validation sets
+        train_parts, cv_part, test_part = dp.load_created_partitions(training_config.dataset_path)
+        if len(train_parts) == 0:
+            raise Exception('No training partitions found')
+        training_set = dp.PartitionBatchGenerator(train_parts, training_config.batch_size, mode='train')
+        training_set_len = len(training_set)
+        cv_set = dp.PartitionBatchGenerator(cv_part, training_config.batch_size, mode='cv')
+        cv_set_len = len(cv_set)
 
-        # Plot learning curves
-        if plot_learning_curves and curr_epoch > 0:
-            utils.plot_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, close=True)
+        if checkpoint.epoch >= training_config.num_epochs:
+            print('Already completed {} epochs'.format(checkpoint.epoch))
+            return
 
-        # Train on training set
-        model.begin_training()
-        loss = 0
-        train_start_time = time.time()
+        # Training loop
+        for curr_epoch in range(checkpoint.epoch, training_config.num_epochs):
 
-        progress = utils.ProgressBar(training_set_len, status='Training epoch %s' % str(curr_epoch + 1))
-        for i, (x, y) in enumerate(training_set):
-            loss += model.train_batch(x, y)
-            progress.update(i)
+            # Plot learning curves
+            if plot_learning_curves and curr_epoch > 0:
+                utils.plot_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, close=True)
 
-        train_stop_time = time.time()
-        training_time = train_stop_time - train_start_time
-        checkpoint.training_times.append(training_time)
-        progress.complete(status='Done training epoch {} in {} seconds'.format(str(curr_epoch + 1), training_time))
+            # Train on training set
+            model.begin_training()
+            loss = 0
+            train_start_time = time.time()
 
-        avg_loss = loss / training_set_len
-        checkpoint.training_losses.append(avg_loss)
-        print('Average training loss per batch:', avg_loss)
+            progress = utils.ProgressBar(training_set_len, status='Training epoch %s' % str(curr_epoch + 1))
+            for i, (x, y) in enumerate(training_set):
+                loss += model.train_batch(x, y)
+                progress.update(i)
 
-        # Evaluate on validation set
-        model.begin_evaluation()
-        loss_cv = 0
+            train_stop_time = time.time()
+            training_time = train_stop_time - train_start_time
+            checkpoint.training_times.append(training_time)
+            progress.complete(status='Done training epoch {} in {} seconds'.format(str(curr_epoch + 1), training_time))
 
-        for i, (x_cv, y_cv) in enumerate(cv_set):
-            loss_batch_cv = model.evaluate(x_cv, y_cv)
-            loss_cv += loss_batch_cv
+            avg_loss = loss / training_set_len
+            checkpoint.training_losses.append(avg_loss)
+            print('Average training loss per batch:', avg_loss)
 
-        avg_loss_cv = loss_cv / cv_set_len
-        checkpoint.cv_losses.append(avg_loss_cv)
-        checkpoint.best_loss = avg_loss_cv if checkpoint.best_loss is None else min(checkpoint.best_loss, avg_loss_cv)
-        print('Average validation loss per batch:', avg_loss_cv)
-        print('Best Loss:', checkpoint.best_loss)
+            # Evaluate on validation set
+            model.begin_evaluation()
+            loss_cv = 0
 
-        # Post evaluation model specific actions
-        model.post_evaluation(checkpoint)
+            for i, (x_cv, y_cv) in enumerate(cv_set):
+                loss_batch_cv = model.evaluate(x_cv, y_cv)
+                loss_cv += loss_batch_cv
 
-        print()
+            avg_loss_cv = loss_cv / cv_set_len
+            checkpoint.cv_losses.append(avg_loss_cv)
+            checkpoint.best_loss = avg_loss_cv if checkpoint.best_loss is None else min(checkpoint.best_loss,
+                                                                                        avg_loss_cv)
+            print('Average validation loss per batch:', avg_loss_cv)
+            print('Best Loss:', checkpoint.best_loss)
 
-        # Checkpoint
-        checkpoint.epoch += 1
-        model.save_state(training_config.get_model_path('state'))
-        checkpoint.save(training_config.get_model_path('checkpoint'))
-        if checkpoint.best_loss == avg_loss_cv:
-            model.save_state(training_config.get_model_path('state_best'))
-            checkpoint.save(training_config.get_model_path('checkpoint_best'))
+            # Post evaluation model specific actions
+            model.post_evaluation(checkpoint)
 
-    print('Training complete')
+            print()
+
+            # Checkpoint
+            checkpoint.epoch += 1
+            model.save_state(training_config.get_model_path('state'))
+            checkpoint.save(training_config.get_model_path('checkpoint'))
+            if checkpoint.best_loss == avg_loss_cv:
+                model.save_state(training_config.get_model_path('state_best'))
+                checkpoint.save(training_config.get_model_path('checkpoint_best'))
+
+        print('Training complete')
+
+        if email:
+            emailer.sendmail(
+                'Model Training Complete: {}'.format(training_config.name),
+                'Model Config: {}\n Model Checkpoint: {}'.format(
+                    str(training_config.get_dict()), str(checkpoint.get_dict()))
+            )
+    except Exception as ex:
+        print('Model Training Failed: {}'.format(str(ex)))
+        if email:
+            emailer.sendmail(
+                'Model Training Failed: {}'.format(training_config.name),
+                'Error: {}'.format(traceback.format_exc())
+            )
+        raise
 
 
-if __name__ == '__main__':
+def run():
     # Arguments Parser
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('-c', '--config_path', help='Path to training config JSON')
@@ -151,18 +173,8 @@ if __name__ == '__main__':
         training_config_path) if training_config_path is not None else TrainingConfig()
 
     # Train
-    try:
-        train(config, plot_learning_curves=plot, cuda=torch.cuda.is_available())
-        if email:
-            emailer.sendmail(
-                'Model Training Complete',
-                'Models Name: {}\nModel Config: {}'.format(config.name, training_config_path)
-            )
-    except Exception as ex:
-        print('Model Training Failed: {}'.format(str(ex)))
-        if email:
-            emailer.sendmail(
-                'Model Training Failed',
-                'Error: {}'.format(traceback.format_exc())
-            )
-        raise
+    train(config, plot_learning_curves=plot, cuda=torch.cuda.is_available(), email=email)
+
+
+if __name__ == '__main__':
+    run()

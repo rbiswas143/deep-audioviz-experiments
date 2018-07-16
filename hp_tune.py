@@ -1,34 +1,18 @@
 import train
 import models
 import data_processor as dp
-import emailer
 import utils
 
 import argparse
 import torch
-import traceback
 import os
 import collections
 
 
-def train_models(train_configs, email=False):
-    for i, config in enumerate(train_configs):
-        print('\nTraining Model {} of {}: {}'.format(i + 1, len(train_configs), config.name))
-        try:
-            train.train(config, plot_learning_curves=False, cuda=torch.cuda.is_available())
-            if email:
-                emailer.sendmail(
-                    'HP Tuning - Model Trained - {}'.format(config.name),
-                    str(config.get_dict())
-                )
-        except Exception as ex:
-            if email:
-                emailer.sendmail(
-                    'HP Tuning - Model Training Failed - {}'.format(config.name),
-                    'Model: {}\n\nError: {}'.format(str(config.get_dict()), traceback.format_exc())
-                )
-            traceback.print_exc()
-
+def train_models(training_configs, email=False):
+    for i, config in enumerate(training_configs):
+        print('\nTraining Model {} of {}: {}'.format(i + 1, len(training_configs), config.name))
+        train.train(config, plot_learning_curves=False, cuda=torch.cuda.is_available(), email=email)
     print('All Models have been evaluated')
 
 
@@ -100,7 +84,7 @@ def save_evaluation_report(training_configs, config_path):
         elif training_config.model == 'cnn_classifier':
             hps.append(_get_hps_for_classifier(training_config, checkpoint))
         else:
-            raise Exception('Invalid model code: {}'.format(train_config.model))
+            raise Exception('Invalid model code: {}'.format(training_configs.model))
     with open(os.path.join(os.path.dirname(config_path), 'hps.txt'), 'w') as rep_file:
         rep_file.write('\n'.join(['\t'.join(hp) for hp in hps]))
 
@@ -118,7 +102,7 @@ def save_evaluation_plots(training_configs):
         utils.save_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, path)
 
 
-if __name__ == '__main__':
+def run():
     # Arguments Parser
     parser = argparse.ArgumentParser(description='Hyper Parameter tuning related actions')
     parser.add_argument('-c', '--config_files_path', help='Path to a file containing a list of training config files')
@@ -157,3 +141,7 @@ if __name__ == '__main__':
         save_evaluation_plots(train_configs)
     else:
         raise Exception('Invalid mode: ' + args.mode)
+
+
+if __name__ == '__main__':
+    run()
