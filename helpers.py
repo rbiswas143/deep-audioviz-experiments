@@ -73,19 +73,19 @@ def hp_grid_vgg16():
 def hp_grid_conv_ae():
     needed = 10
     size = 500
-    lrs = 10 ** np.random.uniform(-4.5, -0.5, size).astype(np.float32)
+    lrs = 10 ** np.random.uniform(-4, -2, size).astype(np.float32)
     moms = np.random.choice([0.9, 0.95, 0.99], size)
-    batch_sizes = np.random.choice([32, 64, 64, 128], size)
-    num_init_filters = np.random.choice([16, 32, 32, 64], size)
-    num_pools = np.random.choice([2, 3, 4, 5], size)
-    num_fcs = np.random.choice([2, 3, 4], size)
-    fc_scale_downs = np.random.choice([2, 4, 8, 16], size)
-    kernel_sizes = np.random.choice([3, 5], size)
-    skip_conns = np.random.choice([True, False], size)
+    batch_sizes = np.random.choice([32, 64], size)
+    num_init_filters = np.random.choice([16, 32, 32], size)
+    num_pools = np.random.choice([4], size)
+    num_fcs = np.random.choice([2, 2, 3], size)
+    fc_scale_downs = np.random.choice([2, 2, 4, 8, 16, 16], size)
+    kernel_sizes = np.random.choice([3, 5, 5], size)
+    skip_conns = np.random.choice([True, True, False], size)
 
     param_range = [20000000, 30000000]
 
-    hp_tune_dir = 'models/hp_tune_ae/conv_ae_medium'
+    hp_tune_dir = 'models/hp_tune_ae/conv_ae_shared_medium_2'
 
     done = 0
     for i, item in enumerate(
@@ -94,13 +94,13 @@ def hp_grid_conv_ae():
         print(i, done, item)
         lr, mom, batch_size, num_init_filter, num_pool, num_fc, fc_scale_down, kernel_size, skip_conn = item
         data = {
-            "name": "conv_ae_medium_{}".format(done + 1),
+            "name": "conv_ae_shared_medium_2_{}".format(done + 1),
             "num_epochs": 5,
             "batch_size": int(batch_size),
             "resume": True,
             "ignore": False,
             "models_dir": os.path.join(hp_tune_dir, 'hp_{}'.format(done + 1)),
-            "dataset_path": "datasets/processed/timing/mfcc_ae/mfcc_ae_timing.h5",
+            "dataset_path": "datasets/processed/medium/mfcc_ae/mfcc_ae_medium.h5",
             "model": "conv_autoencoder",
             "model_params": {
                 "lr": float(lr),
@@ -113,7 +113,7 @@ def hp_grid_conv_ae():
                 "fc_scale_down": int(fc_scale_down),
                 "kernel_size": int(kernel_size),
                 "padding": int(kernel_size / 2),
-                "shared_weights": False,
+                "shared_weights": True,
                 "skip_connections": bool(skip_conn),
                 "enc_activation": "sigmoid"
             }
