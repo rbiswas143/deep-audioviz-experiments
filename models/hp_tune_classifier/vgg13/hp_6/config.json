@@ -1,6 +1,6 @@
 {
   "name": "vgg13_hp_6",
-  "num_epochs": 15,
+  "num_epochs": 5,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
