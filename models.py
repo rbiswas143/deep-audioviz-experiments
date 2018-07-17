@@ -122,8 +122,10 @@ class CNNClassifier(ModelBase):
         self.arch = arch
 
         # Dataset Params
-        self.fma_meta_dir = dataset_config.fma_meta_dir
-        self.fma_type = dataset_config.fma_type
+        if dataset_config is None:
+            print('Warning dataset config is not available')
+        self.fma_meta_dir = dataset_config.fma_meta_dir if dataset_config is not None else None
+        self.fma_type = dataset_config.fma_type if dataset_config is not None else None
 
         # Validate
         assert tuple(self.input_dims) == (64, 96)

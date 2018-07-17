@@ -26,8 +26,9 @@ class TrainingConfig(dp.BaseConfig):
 
     def get_by_model_key(self, cuda):
         if self.model == 'cnn_classifier':
-            model = models.CNNClassifier(dp.DataPrepConfig.load_from_dataset(self.dataset_path),
-                                         cuda=cuda, **self.model_params)
+            model = models.CNNClassifier(
+                dp.DataPrepConfig.load_from_dataset(self.dataset_path) if os.path.isfile(self.dataset_path) else None,
+                cuda=cuda, **self.model_params)
         elif self.model == 'conv_autoencoder':
             model = models.ConvAutoencoder(cuda=cuda, **self.model_params)
         else:

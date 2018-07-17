@@ -1,0 +1,6 @@
+name : vgg13_hp_1	trainable_params : 38810824	epoch : 5	best_loss : 2.085185508205466	batch_size : 128	lr : 0.13352486491203308	momentum : 0.98	arch : vgg13	batchnorm : true
+name : vgg13_hp_2	trainable_params : 38810824	epoch : 5	best_loss : 2.089879885571929	batch_size : 64	lr : 0.4168529808521271	momentum : 0.9	arch : vgg13	batchnorm : false
+name : vgg13_hp_3	trainable_params : 38810824	epoch : 5	best_loss : 1.3763966192937878	batch_size : 128	lr : 0.02121715247631073	momentum : 0.9	arch : vgg13	batchnorm : false
+name : vgg13_hp_4	trainable_params : 38810824	epoch : 5	best_loss : 1.2488199629119991	batch_size : 32	lr : 0.00013437634333968163	momentum : 0.98	arch : vgg13	batchnorm : false
+name : vgg13_hp_5	trainable_params : 38810824	epoch : 5	best_loss : 1.4483526752576796	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg13	batchnorm : false
+name : vgg13_hp_6	trainable_params : 38810824	epoch : 5	best_loss : 1.9969607460539776	batch_size : 64	lr : 1.1740134141291492e-05	momentum : 0.9	arch : vgg13	batchnorm : true
