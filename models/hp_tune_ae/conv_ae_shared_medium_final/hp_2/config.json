@@ -1,6 +1,6 @@
 {
   "name": "conv_ae_shared_medium_final_2",
-  "num_epochs": 10,
+  "num_epochs": 5,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
