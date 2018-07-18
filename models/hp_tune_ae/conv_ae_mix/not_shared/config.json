@@ -1,0 +1,28 @@
+{
+  "name": "conv_ae_not_shared",
+  "num_epochs": 20,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_ae/conv_ae_mix/not_shared",
+  "dataset_path": "datasets/processed/medium/mfcc_ae/mfcc_ae_medium.h5",
+  "model": "conv_autoencoder",
+  "model_params": {
+    "lr": 0.005276811309158802,
+    "momentum": 0.95,
+    "input_dims": [
+      64,
+      96
+    ],
+    "enc_len": 10,
+    "num_init_filters": 32,
+    "num_pools": 4,
+    "num_fc": 2,
+    "fc_scale_down": 2,
+    "kernel_size": 3,
+    "padding": 1,
+    "shared_weights": false,
+    "skip_connections": false,
+    "enc_activation": "sigmoid"
+  }
+}
