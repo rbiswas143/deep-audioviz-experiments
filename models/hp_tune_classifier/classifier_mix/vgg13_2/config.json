@@ -1,0 +1,22 @@
+{
+  "name": "vgg13_2",
+  "num_epochs": 2,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_classifier/classifier_mix/vgg13_2",
+  "dataset_path": "datasets/processed/medium/mfcc_classifier/mfcc_classifier_medium.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "num_classes": 16,
+    "pretrained": true,
+    "lr": 1.1740134141291492e-05,
+    "momentum": 0.95,
+    "batchnorm": "true",
+    "arch": "vgg13"
+  }
+}
