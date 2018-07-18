@@ -1,6 +1,6 @@
 {
   "name": "alexnet_2",
-  "num_epochs": 10,
+  "num_epochs": 15,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
