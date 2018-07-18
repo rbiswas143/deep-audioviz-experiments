@@ -1,0 +1,8 @@
+models/hp_tune_classifier/classifier_mix/alexnet_1/config.json
+models/hp_tune_classifier/classifier_mix/alexnet_2/config.json
+models/hp_tune_classifier/classifier_mix/vgg11_1/config.json
+models/hp_tune_classifier/classifier_mix/vgg11_2/config.json
+models/hp_tune_classifier/classifier_mix/vgg13_1/config.json
+models/hp_tune_classifier/classifier_mix/vgg13_2/config.json
+models/hp_tune_classifier/classifier_mix/vgg16_1/config.json
+models/hp_tune_classifier/classifier_mix/vgg16_2/config.json

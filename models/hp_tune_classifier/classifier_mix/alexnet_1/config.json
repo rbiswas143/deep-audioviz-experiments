@@ -1,0 +1,22 @@
+{
+  "name": "alexnet_1",
+  "num_epochs": 2,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_classifier/classifier_mix/alexnet_1",
+  "dataset_path": "datasets/processed/medium/mfcc_classifier/mfcc_classifier_medium.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "num_classes": 16,
+    "pretrained": true,
+    "lr": 5.71496166230645e-05,
+    "momentum": 0.9,
+    "batchnorm": "false",
+    "arch": "alexnet"
+  }
+}
