@@ -1,0 +1,19 @@
+{
+  "name": "mfcc_classifier_large",
+  "fma_audio_dir": "datasets/fma/fma_large",
+  "fma_meta_dir": "datasets/fma/fma_metadata",
+  "fma_type": "large",
+  "num_tracks": 81574,
+  "sr": 44100,
+  "datasets_dir": "datasets/processed/large/mfcc_classifier",
+  "do_re_sample": true,
+  "test_split": 0.03,
+  "cv_split": 0.03,
+  "num_train_partitions": 8,
+  "scaler": "standard",
+  "segments_per_track": null,
+  "frames_per_segment": 96,
+  "num_mfcc": 64,
+  "mfcc_hops": 441,
+  "n_fft": 1102
+}

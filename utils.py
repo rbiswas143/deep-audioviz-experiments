@@ -122,7 +122,7 @@ def get_fma_genres(meta_dir):
 @cached(lambda *a, **k: str(a + tuple(k.values())))
 def get_genres_map(meta_dir, fma_type, reverse=False):
     tracks = get_fma_meta(meta_dir, fma_type)
-    unique = enumerate(sorted(list(tracks['track', 'genre_top'].unique())))
+    unique = enumerate(sorted([g for g in tracks['track', 'genre_top'].unique() if g is not np.nan]))
     if reverse:
         return {g: i for i, g in unique}
     else:
