@@ -1,6 +1,6 @@
 {
   "name": "conv_ae_shared",
-  "num_epochs": 20,
+  "num_epochs": 30,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
@@ -8,7 +8,7 @@
   "dataset_path": "datasets/processed/medium/mfcc_ae/mfcc_ae_medium.h5",
   "model": "conv_autoencoder",
   "model_params": {
-    "lr": 0.005276811309158802,
+    "lr": 0.002276811309158802,
     "momentum": 0.95,
     "input_dims": [
       64,
