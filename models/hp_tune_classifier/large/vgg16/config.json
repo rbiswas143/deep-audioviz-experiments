@@ -1,0 +1,22 @@
+{
+  "name": "vgg16",
+  "num_epochs": 30,
+  "batch_size": 64,
+  "resume": true,
+  "ignore": false,
+  "models_dir": "models/hp_tune_classifier/large/vgg16",
+  "dataset_path": "datasets/processed/large/mfcc_classifier/mfcc_classifier_large.h5",
+  "model": "cnn_classifier",
+  "model_params": {
+    "input_dims": [
+      64,
+      96
+    ],
+    "num_classes": 16,
+    "pretrained": true,
+    "lr": 1.1740134141291492e-05,
+    "momentum": 0.95,
+    "batchnorm": "true",
+    "arch": "vgg16"
+  }
+}
