@@ -109,6 +109,7 @@ def run():
     parser.add_argument('-m', '--mode', choices=['train', 'print-report', 'save-hps', 'save-plots'], default='train',
                         help='Action to perform')
     parser.add_argument('-e', '--email', action='store_true', help='Send emails')
+    parser.add_argument('-d', '--dataset', action='store_true', help='Print Dataset Details')
 
     # Parse arguments
     args = parser.parse_args()
@@ -126,7 +127,7 @@ def run():
         train_models(train_configs, email=args.email)
     elif args.mode == 'print-report':
         for i, train_config in enumerate(train_configs):
-            if i == 0:
+            if args.dataset and i == 0:
                 dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
                 print('Dataset config for Model 1')
                 for key, val in dataset_config.__dict__.items():
