@@ -1,6 +1,6 @@
 {
   "name": "vgg11_2",
-  "num_epochs": 15,
+  "num_epochs": 25,
   "batch_size": 64,
   "resume": true,
   "ignore": false,
@@ -14,7 +14,7 @@
     ],
     "num_classes": 16,
     "pretrained": true,
-    "lr": 1.1740134141291492e-05,
+    "lr": 3.913378047097164e-06,
     "momentum": 0.95,
     "batchnorm": "true",
     "arch": "vgg11"

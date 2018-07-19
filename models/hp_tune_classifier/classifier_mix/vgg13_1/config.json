@@ -3,7 +3,7 @@
   "num_epochs": 15,
   "batch_size": 64,
   "resume": true,
-  "ignore": false,
+  "ignore": true,
   "models_dir": "models/hp_tune_classifier/classifier_mix/vgg13_1",
   "dataset_path": "datasets/processed/medium/mfcc_classifier/mfcc_classifier_medium.h5",
   "model": "cnn_classifier",

@@ -1,8 +1,8 @@
-name : alexnet_1	trainable_params : 44470992	epoch : 2	best_loss : 1.1910452305981256	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : alexnet	batchnorm : false
-name : alexnet_2	trainable_params : 44470992	epoch : 2	best_loss : 1.2943779617837332	batch_size : 64	lr : 1.1740134141291492e-05	momentum : 0.95	arch : alexnet	batchnorm : true
-name : vgg11_1	trainable_params : 38658704	epoch : 2	best_loss : 1.262725836877684	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg11	batchnorm : false
-name : vgg11_2	trainable_params : 38658704	epoch : 2	best_loss : 1.4480224107075663	batch_size : 64	lr : 1.1740134141291492e-05	momentum : 0.95	arch : vgg11	batchnorm : true
-name : vgg13_1	trainable_params : 38843600	epoch : 2	best_loss : 1.2337936453738259	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg13	batchnorm : false
-name : vgg13_2	trainable_params : 38843600	epoch : 2	best_loss : 1.431254523471721	batch_size : 64	lr : 1.1740134141291492e-05	momentum : 0.95	arch : vgg13	batchnorm : true
-name : vgg16_1	trainable_params : 44155856	epoch : 2	best_loss : 1.156955980994169	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg16	batchnorm : false
-name : vgg16_2	trainable_params : 44155856	epoch : 2	best_loss : 1.4350458014647938	batch_size : 64	lr : 1.1740134141291492e-05	momentum : 0.95	arch : vgg16	batchnorm : true
+name : alexnet_1	trainable_params : 44470992	epoch : 15	best_loss : 1.0251141087812128	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : alexnet	batchnorm : false
+name : alexnet_2	trainable_params : 44470992	epoch : 15	best_loss : 1.0712187280064647	batch_size : 64	lr : 3.913378047097164e-06	momentum : 0.95	arch : alexnet	batchnorm : true
+name : vgg11_1	trainable_params : 38658704	epoch : 15	best_loss : 1.0543960243174173	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg11	batchnorm : false
+name : vgg11_2	trainable_params : 38658704	epoch : 15	best_loss : 1.075117988204493	batch_size : 64	lr : 3.913378047097164e-06	momentum : 0.95	arch : vgg11	batchnorm : true
+name : vgg13_1	trainable_params : 38843600	epoch : 15	best_loss : 1.0132840151347002	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg13	batchnorm : false
+name : vgg13_2	trainable_params : 38843600	epoch : 15	best_loss : 1.0453593580468188	batch_size : 64	lr : 3.913378047097164e-06	momentum : 0.95	arch : vgg13	batchnorm : true
+name : vgg16_1	trainable_params : 44155856	epoch : 6	best_loss : 1.0222828441742555	batch_size : 64	lr : 5.71496166230645e-05	momentum : 0.9	arch : vgg16	batchnorm : false
+name : vgg16_2	trainable_params : 44155856	epoch : 15	best_loss : 1.0240176087154926	batch_size : 64	lr : 3.913378047097164e-06	momentum : 0.95	arch : vgg16	batchnorm : true
