@@ -3,6 +3,7 @@ import train
 import models
 import data_processor as dp
 
+import torch
 import time
 import os
 import numpy as np
@@ -147,8 +148,26 @@ def hp_grid_conv_ae():
         cfile.write('\n'.join(configs))
 
 
-def clear_partition_data(p):
-    p.load_data()
-    p.segment_indices = np.array([])
-    p.segment_data = np.array([])
-    p.save_data()
+def encode_test_partition(train_config_path, output_path, block=None, index=None):
+    train_config = train.TrainingConfig.load_from_file(train_config_path)
+    cuda = torch.cuda.is_available()
+
+    model = train_config.get_by_model_key(cuda)
+    model.load_state(train_config.get_model_path('state_best'))
+
+    train_parts, cv_part, test_part = dp.load_created_partitions(train_config.dataset_path)
+    test_set = dp.PartitionBatchGenerator(test_part, train_config.batch_size, mode='test')
+
+    test_enc = torch.tensor([]).to(model.device)
+    for x_test, y_test in test_set:
+        with torch.no_grad():
+            if train_config.model == 'cnn_classifier':
+                assert block is not None and index is not None
+                enc = model.encode(x_test, block, index)
+            elif train_config.model == 'conv_autoencoder':
+                enc = model.encode(x_test)
+            test_enc = torch.cat([test_enc, enc])
+
+    if cuda:
+        test_enc = test_enc.cpu()
+    np.save(output_path, test_enc.numpy())
