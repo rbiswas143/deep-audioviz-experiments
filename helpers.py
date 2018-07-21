@@ -158,7 +158,7 @@ def encode_test_partition(train_config_path, output_dir, block=None, index=None)
     train_parts, cv_part, test_part = dp.load_created_partitions(train_config.dataset_path)
     test_set = dp.PartitionBatchGenerator(test_part, train_config.batch_size, mode='test')
 
-    test_enc = torch.tensor([]).to(model.device)
+    test_enc = torch.tensor([])
     for x_test, y_test in test_set:
         with torch.no_grad():
             if train_config.model == 'cnn_classifier':
@@ -166,10 +166,8 @@ def encode_test_partition(train_config_path, output_dir, block=None, index=None)
                 enc = model.encode(x_test, block, index)
             elif train_config.model == 'conv_autoencoder':
                 enc = model.encode(x_test)
-            test_enc = torch.cat([test_enc, enc])
+            test_enc = torch.cat([test_enc, enc.cpu()])
 
-    if cuda:
-        test_enc = test_enc.cpu()
     if train_config.model == 'cnn_classifier':
         output_path = os.path.join(output_dir, "{}_B{}_L{}.encoding".format(train_config.name, block, index))
     elif train_config.model == 'conv_autoencoder':
