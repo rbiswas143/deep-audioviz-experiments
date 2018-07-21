@@ -148,7 +148,7 @@ def hp_grid_conv_ae():
         cfile.write('\n'.join(configs))
 
 
-def encode_test_partition(train_config_path, output_path, block=None, index=None):
+def encode_test_partition(train_config_path, output_dir, block=None, index=None):
     train_config = train.TrainingConfig.load_from_file(train_config_path)
     cuda = torch.cuda.is_available()
 
@@ -170,4 +170,8 @@ def encode_test_partition(train_config_path, output_path, block=None, index=None
 
     if cuda:
         test_enc = test_enc.cpu()
+    if train_config.model == 'cnn_classifier':
+        output_path = os.path.join(output_dir, "{}_B{}_L{}.encoding".format(train_config.name, block, index))
+    elif train_config.model == 'conv_autoencoder':
+        output_path = os.path.join(output_dir, "{}.encoding".format(train_config.name))
     np.save(output_path, test_enc.numpy())
