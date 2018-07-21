@@ -1,10 +1,12 @@
 import utils
-import time
+import train
 import models
+import data_processor as dp
+
+import time
 import os
 import numpy as np
 import json
-import train
 
 
 def show_plot(train_config_file, opt=1):
@@ -143,3 +145,10 @@ def hp_grid_conv_ae():
     configs = [os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)) for i in range(needed)]
     with open(os.path.join(hp_tune_dir, 'hp_config.txt'), 'w') as cfile:
         cfile.write('\n'.join(configs))
+
+
+def clear_partition_data(p):
+    p.load_data()
+    p.segment_indices = np.array([])
+    p.segment_data = np.array([])
+    p.save_data()
