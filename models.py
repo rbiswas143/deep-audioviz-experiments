@@ -221,6 +221,19 @@ class CNNClassifier(ModelBase):
             'num_batches': 0
         }
 
+    def encode(self, x, block, index):
+        assert block in ['classifier', 'features']
+        x = self._process_inputs(x)
+        if block == 'classifier':
+            x = self.model._modules['features'](x)
+            x = x.view(x.size(0), -1)
+        layers = self.model._modules[block]._modules.values()
+        assert index < len(layers)
+        for i, layer in enumerate(layers):
+            x = layer(x)
+            if index == i:
+                return x
+
     def evaluate(self, x, y_indices):
         x = self._process_inputs(x)
         y_genres = self._process_outputs(y_indices)
@@ -484,6 +497,10 @@ class ConvAutoencoder(ModelBase):
         loss.backward()
         self.optimizer.step()
         return loss.item()
+
+    def encode(self, x):
+        x = self._process_inputs(x)
+        return self.model.encode(x)
 
     def begin_evaluation(self):
         self.model.eval()
