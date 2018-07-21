@@ -354,7 +354,7 @@ class UtilsTests(unittest.TestCase):
 ##
 
 
-def pre_process_track_e2e(audio_path, config):
+def pre_process_track_e2e(audio_path, config, sample=True):
     """Processes an audio track for End to End training
         Each track is broken down into #segments=segments_per_track of length #frames=frames_per_segment
     """
@@ -375,12 +375,13 @@ def pre_process_track_e2e(audio_path, config):
     segments = trimmed.reshape(possible_segments, config.frames_per_segment)
 
     # Sample required segments
-    sampled = sample_segments(segments, total_segments)
+    if sample:
+        return sample_segments(segments, total_segments)
+    else:
+        return segments
 
-    return sampled
 
-
-def pre_process_track_mfcc(audio_path, config):
+def pre_process_track_mfcc(audio_path, config, sample=True):
     """Processes an audio track for training in frequency domain using MFCCs
         Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, frames_per_segment)
     """
@@ -410,54 +411,12 @@ def pre_process_track_mfcc(audio_path, config):
 
     # Rearrange axes and sample segments
     segments = segments.swapaxes(0, 1)
-    return sample_segments(segments, total_segments)
-
-
-def pre_process_track_mfcc_old(audio_path, config):
-    """Processes an audio track for training in frequency domain using MFCCs
-        Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, frames_per_segment)
-    """
-    # Load audio data
-    audio_data = load_track(audio_path, config.sr, config.do_re_sample)
-    if audio_data is None:
-        return None
-
-    # Determine the frames per segment so that the desired mfcc feature length can be obtained
-    frames_per_segment = (config.mfcc_frames_per_segment - 1) * config.mfcc_hops
-
-    # Check if sufficient frames are available
-    possible_segments = int(audio_data.size / frames_per_segment)
-    total_segments = possible_segments if config.segments_per_track is None else config.segments_per_track
-    total_frames = frames_per_segment * total_segments
-    if audio_data.size < total_frames:
-        print('Not enough frames {0} for file {1} (Skipping)'.format(audio_data.size, audio_path))
-        return
-
-    # Trim and split the track into segments
-    trimmed = audio_data[:possible_segments * frames_per_segment]
-    segments = trimmed.reshape(possible_segments, frames_per_segment)
 
     # Sample required segments
-    sampled = sample_segments(segments, total_segments)
-
-    # mfcc
-    mfcc = np.array([])
-    for segment in sampled:
-        converted = librosa.feature.mfcc(y=segment, n_mfcc=config.num_mfcc, sr=config.sr, hop_length=config.mfcc_hops)
-        mfcc = np.concatenate((mfcc, converted.reshape(-1)))
-
-    # Check mfcc size
-    expected_size = total_segments * config.num_mfcc * config.mfcc_frames_per_segment
-    try:
-        assert mfcc.size == expected_size
-    except AssertionError:
-        print('Error in computing MFFCs. Expected Size: {0}*{1}*{2}={3}. Actual Size: {4}'
-              .format(total_segments, config.num_mfcc, config.mfcc_frames_per_segment, expected_size, mfcc.size))
-        return None
-
-    # Reshape mfcc
-    reshaped = mfcc.reshape(total_segments, config.num_mfcc, config.mfcc_frames_per_segment)
-    return reshaped
+    if sample:
+        return sample_segments(segments, total_segments)
+    else:
+        return segments
 
 
 def pre_process_track(track_index, mode, config):
@@ -883,7 +842,7 @@ def get_partition_key(partition_type, partition_num=None):
 class PartitionBatchGenerator:
 
     def __init__(self, partitions, batch_size, mode='train', post_process=None):
-        assert mode in ['train', 'cv']
+        assert mode in ['train', 'cv', 'test']
         self.partitions = partitions if mode == 'train' else [partitions]
         self.batch_size = batch_size if batch_size is not None else self.partitions[0].get_num_segments()
         self.post_process = post_process if post_process is not None else lambda *_: _
