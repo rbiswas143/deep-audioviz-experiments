@@ -157,9 +157,12 @@ def encode_test_partition(train_config_path, output_dir, block=None, index=None)
 
     train_parts, cv_part, test_part = dp.load_created_partitions(train_config.dataset_path)
     test_set = dp.PartitionBatchGenerator(test_part, train_config.batch_size, mode='test')
+    test_set_len = len(test_set)
 
     test_enc = torch.tensor([])
-    for x_test, y_test in test_set:
+    progress = utils.ProgressBar(test_set_len, status='Encoding in progress')
+    enc_start_time = time.time()
+    for i, (x_test, y_test) in enumerate(test_set):
         with torch.no_grad():
             if train_config.model == 'cnn_classifier':
                 assert block is not None and index is not None
@@ -167,6 +170,10 @@ def encode_test_partition(train_config_path, output_dir, block=None, index=None)
             elif train_config.model == 'conv_autoencoder':
                 enc = model.encode(x_test)
             test_enc = torch.cat([test_enc, enc.cpu()])
+        progress.update(i)
+    enc_stop_time = time.time()
+    enc_time = enc_stop_time - enc_start_time
+    progress.complete(status='Encoded in {} seconds'.format(enc_time))
 
     if train_config.model == 'cnn_classifier':
         output_path = os.path.join(output_dir, "{}_B{}_L{}.encoding".format(train_config.name, block, index))
