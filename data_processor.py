@@ -419,13 +419,12 @@ def pre_process_track_mfcc(audio_path, config, sample=True):
         return segments
 
 
-def pre_process_track(track_index, mode, config):
+def pre_process_track(audio_path, mode, config, sample=True):
     """Assigns the processing of a track to an appropriate processor using mode"""
-    audio_path = fma_utils.get_audio_path(config.fma_audio_dir, track_index)
     if mode == 'e2e':
-        track_data = pre_process_track_e2e(audio_path, config)
+        track_data = pre_process_track_e2e(audio_path, config, sample=sample)
     elif mode == 'mfcc':
-        track_data = pre_process_track_mfcc(audio_path, config)
+        track_data = pre_process_track_mfcc(audio_path, config, sample=sample)
     else:
         raise ('Invalid mode: {}'.format(mode))
     return track_data
@@ -707,7 +706,8 @@ class Partition:
             # Track already processed?
             if track_index not in done_indices:
                 # Pre-process and store in cache
-                segment_data = pre_process_track(track_index, mode, config)
+                audio_path = fma_utils.get_audio_path(config.fma_audio_dir, track_index)
+                segment_data = pre_process_track(audio_path, mode, config)
                 if segment_data is None:
                     continue
                 segment_count = segment_data.shape[0]
