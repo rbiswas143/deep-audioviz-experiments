@@ -56,7 +56,7 @@ class ModelBase:
     def init_checkpoint(self):
         return {}
 
-    def post_evaluation(self, checkpoint):
+    def post_evaluation(self, checkpoint=None):
         pass
 
 
@@ -252,14 +252,16 @@ class CNNClassifier(ModelBase):
 
             return loss
 
-    def post_evaluation(self, checkpoint):
+    def post_evaluation(self, checkpoint=None):
 
         avg_accuracy = self.eval_cache['accuracy_sum'] / self.eval_cache['num_batches']
-        checkpoint.model_specific['cv_accuracies'].append(avg_accuracy)
+        if checkpoint is not None:
+            checkpoint.model_specific['cv_accuracies'].append(avg_accuracy)
         print('Average accuracy per batch:', avg_accuracy)
 
         polled_accuracy = self._evaluate_polled()
-        checkpoint.model_specific['polled_accuracies'].append(polled_accuracy)
+        if checkpoint is not None:
+            checkpoint.model_specific['polled_accuracies'].append(polled_accuracy)
         print('Polled accuracy:', polled_accuracy)
 
     def _evaluate_polled(self):
