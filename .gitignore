@@ -9,3 +9,4 @@ datasets/mnist
 __pycache__
 *.swp
 *.pyc
+*cache*
