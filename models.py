@@ -10,6 +10,37 @@ import numpy as np
 
 import alexnet
 
+## Trainded models info
+
+trained_model_configs = {
+    'conv_ae_shared_test': 'models/test/conv_autoencoder_shared/config.json',
+    'classifier_test': 'models/test/classifier_vgg16/config.json',
+    'conv_ae_shared': 'models/hp_tune_ae/conv_ae_mix/shared/config.json',
+    'conv_ae_skip': 'models/hp_tune_ae/conv_ae_mix/skip/config.json',
+    'conv_ae_not_shared': 'models/hp_tune_ae/conv_ae_mix/not_shared/config.json',
+    'alexnet': 'models/hp_tune_classifier/classifier_mix/alexnet_2/config.json',
+    'vgg11': 'models/hp_tune_classifier/classifier_mix/vgg11_2/config.json',
+    'vgg13': 'models/hp_tune_classifier/classifier_mix/vgg13_2/config.json',
+    'vgg16': 'models/hp_tune_classifier/classifier_mix/vgg16_2/config.json'
+}
+
+encoding_layer_options = {
+    'vgg16': {
+        'L14': ('features', 43),
+        'L15': ('classifier', 1),
+        'L16': ('classifier', 4),
+    },
+    'vgg13': {
+        'L10': ('features', 34)
+    },
+    'vgg11': {
+        'L8': ('features', 28)
+    },
+    'alexnet': {
+        'L6': ('classifier', 1)
+    }
+}
+
 
 ## Utils
 
