@@ -7,3 +7,5 @@ datasets/mnist
 .ipynb*
 .idea
 __pycache__
+*.swp
+*.pyc
