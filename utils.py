@@ -129,15 +129,6 @@ def get_genres_map(meta_dir, fma_type, reverse=False):
         return {i: g for i, g in unique}
 
 
-def map_indices(seg_indices, meta_dir, fma_type):
-    genre_map = get_genres_map(meta_dir, fma_type, reverse=True)
-    tracks = get_fma_meta(meta_dir, fma_type)
-    tracks = tracks['track'].loc[seg_indices]
-    seg_genres_idx = np.array(list(map(lambda g: genre_map[g], tracks['genre_top'])))
-    y = np.tile(np.arange(len(genre_map)), seg_genres_idx.shape[0]).reshape(seg_indices.shape[0], len(genre_map))
-    return np.where(y == seg_genres_idx.reshape(-1, 1), 1, 0).astype(np.float32)
-
-
 def map_indices_to_genre(seg_indices, meta_dir, fma_type):
     genre_map = get_genres_map(meta_dir, fma_type, reverse=True)
     tracks = get_fma_meta(meta_dir, fma_type)
