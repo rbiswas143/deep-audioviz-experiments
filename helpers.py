@@ -1,9 +1,7 @@
 import utils
 import train
 import models
-import data_processor as dp
 
-import torch
 import time
 import os
 import numpy as np
@@ -146,37 +144,3 @@ def hp_grid_conv_ae():
     configs = [os.path.join(hp_tune_dir, 'hp_{}/config.json'.format(i + 1)) for i in range(needed)]
     with open(os.path.join(hp_tune_dir, 'hp_config.txt'), 'w') as cfile:
         cfile.write('\n'.join(configs))
-
-
-def encode_test_partition(train_config_path, output_dir, block=None, index=None):
-    train_config = train.TrainingConfig.load_from_file(train_config_path)
-    cuda = torch.cuda.is_available()
-
-    model = train_config.get_by_model_key(cuda)
-    model.load_state(train_config.get_model_path('state_best'))
-
-    train_parts, cv_part, test_part = dp.load_created_partitions(train_config.dataset_path)
-    test_set = dp.PartitionBatchGenerator(test_part, train_config.batch_size, mode='test')
-    test_set_len = len(test_set)
-
-    test_enc = torch.tensor([])
-    progress = utils.ProgressBar(test_set_len, status='Encoding in progress')
-    enc_start_time = time.time()
-    for i, (x_test, y_test) in enumerate(test_set):
-        with torch.no_grad():
-            if train_config.model == 'cnn_classifier':
-                assert block is not None and index is not None
-                enc = model.encode(x_test, block, index)
-            elif train_config.model == 'conv_autoencoder':
-                enc = model.encode(x_test)
-            test_enc = torch.cat([test_enc, enc.cpu()])
-        progress.update(i)
-    enc_stop_time = time.time()
-    enc_time = enc_stop_time - enc_start_time
-    progress.complete(status='Encoded in {} seconds'.format(enc_time))
-
-    if train_config.model == 'cnn_classifier':
-        output_path = os.path.join(output_dir, "{}_B{}_L{}.encoding".format(train_config.name, block, index))
-    elif train_config.model == 'conv_autoencoder':
-        output_path = os.path.join(output_dir, "{}.encoding".format(train_config.name))
-    np.save(output_path, test_enc.numpy())
