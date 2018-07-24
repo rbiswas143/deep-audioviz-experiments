@@ -583,15 +583,6 @@ def fit_scaler_on_partitions(partitions, dataset_path, scaler='standard'):
         raise Exception('Invalid scaler: {}'.format(scaler))
 
 
-def scale_partitions(partitions, norms, scaler='standard'):
-    if scaler == 'standard':
-        scale_partition_with_minmax_scaler(partitions, dataset_path)
-    elif scaler == 'minmax':
-        fit_minmax_scaler_on_partitions(partitions, dataset_path)
-    else:
-        raise Exception('Invalid scaler: {}'.format(scaler))
-
-
 def save_scaler_norms(norms, dataset_path):
     norms_proc = []
     for norm in norms:
@@ -842,7 +833,8 @@ def get_partition_key(partition_type, partition_num=None):
 class PartitionBatchGenerator:
 
     def __init__(self, partitions, batch_size, mode='train', post_process=None):
-        assert mode in ['train', 'cv', 'test']
+        assert mode in ['train', 'cv', 'test', 'track']
+        self.mode = mode
         self.partitions = partitions if mode == 'train' else [partitions]
         self.batch_size = batch_size if batch_size is not None else self.partitions[0].get_num_segments()
         self.post_process = post_process if post_process is not None else lambda *_: _
@@ -855,11 +847,12 @@ class PartitionBatchGenerator:
 
     def __iter__(self):
         for partition in self.partitions:
-            partition.load_data()
-            indices = np.arange(partition.segment_data.shape[0])
-            np.random.shuffle(indices)
-            partition.segment_data[:] = partition.segment_data[indices]
-            partition.segment_indices[:] = partition.segment_indices[indices]
+            if self.mode != 'track':
+                partition.load_data()
+                indices = np.arange(partition.segment_data.shape[0])
+                np.random.shuffle(indices)
+                partition.segment_data[:] = partition.segment_data[indices]
+                partition.segment_indices[:] = partition.segment_indices[indices]
             curr_batch_start = 0
             while curr_batch_start < partition.segment_data.shape[0]:
                 curr_batch_end = min(curr_batch_start + self.batch_size, partition.segment_data.shape[0])
@@ -867,7 +860,8 @@ class PartitionBatchGenerator:
                 curr_batch_segment_indices = partition.segment_indices[curr_batch_start: curr_batch_end]
                 curr_batch_start += self.batch_size
                 yield self.post_process(curr_batch_segments, curr_batch_segment_indices)
-            partition.flush_data()
+            if self.mode != 'track':
+                partition.flush_data()
 
 
 # @unittest.skip
