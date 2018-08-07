@@ -1,65 +1,55 @@
+"""Server exposing an endpoint for uploading tracks, extracting their encodings and returning the
+mapped visual parameters
+"""
+
 import data_processor as dp
 import train
 import models
 import mapping_utils
+import commons
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 import torch
 
-# frontend params: deterministic/random, exp avg
 
-
-class ServerConfig(dp.BaseConfig):
+class ServerConfig(commons.BaseConfig):
+    """Server Initialization Config"""
 
     def __init__(self):
         self.secret = 'saodoasmdom9908128euh1dn'
         self.port = 7000
         self.debug = True
         self.upload_dir = '/tmp/deepviz'
-        self.allowed_extensions = ['mp3', 'wav']
+        self.allowed_extensions = ['mp3', 'wav', 'm4a']
 
 
 def start_server(server_config):
+    """Launches an endpoint for feature mapping"""
 
+    # Server configuration
     app = Flask(__name__)
+    CORS(app)
     app.secret_key = server_config.secret
     app.config['server_config'] = server_config
 
-    @app.route('/fetchmap', methods=['GET', 'POST'])
+    @app.route('/fetchmap', methods=['POST'])
     def fetch_map():
-        # if not request.method == 'POST':
-        #     raise Exception('Invalid request method: {}'.format(request.method))
+        """"""
 
-        if request.method == 'GET':
-            return '''
-                    <!doctype html>
-                    <title>Upload new File</title>
-                    <h1>Upload new File</h1>
-                    <form method=post enctype=multipart/form-data>
-                      Model <input type=text name=model><br>
-                      Mapping <input type=text name=feature_mapping><br>
-                      Scaling <input type=text name=feature_scaling><br>
-                      Softmax <input type=text name=kmeans_softmax><br>
-                      Layer <input type=text name=classifier_layer><br>
-                      Track <input type=file name=track><br>
-                      <input type=submit value=Upload>
-                    </form>
-                    '''
-
-        # Request Config
+        # Parse Request Config
         request_config = mapping_utils.MappingConfig()
         request_config.model = request.form['model']
         request_config.train_config_path = models.trained_model_configs[request_config.model]
         request_config.feature_mapping = request.form['feature_mapping']
         request_config.feature_scaling = request.form['feature_scaling']
-        if 'kmeans_softmax' in request.form:
-            request_config.kmeans_softmax = request.form['kmeans_softmax'].lower() == 'true'
         if 'classifier_layer' in request.form:
             request_config.classifier_layer = request.form['classifier_layer']
+        print('Request Config: {}'.format(request_config.get_dict()))
 
-        # File
+        # Save uploaded file
         if 'track' not in request.files:
             raise Exception('Audio file is not available in the request')
         track = request.files['track']
@@ -75,6 +65,7 @@ def start_server(server_config):
         track.save(track_path)
 
         try:
+            # Configs
             train_config = train.TrainingConfig.load_from_file(request_config.train_config_path)
             dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
             dataset_mode = dp.read_h5_attrib('mode', dataset_config.get_dataset_path())
@@ -90,11 +81,12 @@ def start_server(server_config):
 
             # Encode and Map
             enc = mapping_utils.encode(model, batch, train_config, request_config)
-            enc = mapping_utils.get_mapping(enc, request_config, train_config)
-            enc = mapping_utils.get_enc_scaled(enc, request_config.feature_scaling)
+            enc = mapping_utils.map_and_scale(enc, request_config, train_config)
         finally:
+            # Delete uploaded track
             os.unlink(track_path)
 
+        # Compile and send
         return jsonify({
             'train_config': train_config.get_dict(),
             'dataset_mode': dataset_mode,
@@ -102,6 +94,7 @@ def start_server(server_config):
             'encoding': enc.tolist()
         })
 
+    # Start server
     print('Starting DeepViz server at Port:{}'.format(server_config.port))
     app.run(None, server_config.port, debug=server_config.debug)
 

@@ -1,7 +1,12 @@
+"""Send email notifications to configured recipients"""
+
 import smtplib
 from email.mime.text import MIMEText
-import os, json
+import os
+import json
+import traceback
 
+# Default email configuration
 email_config = {
     'host': 'smtp.gmx.com',
     'port': 465,
@@ -10,6 +15,7 @@ email_config = {
     'recipients': []
 }
 
+# Override default configuration using a private config file
 configured = False
 email_config_file = 'private/email.json'
 if os.path.isfile(email_config_file):
@@ -21,7 +27,8 @@ else:
 
 
 def sendmail(subject, body):
-    if not configured:
+    """Create and send an email to the configured recipients"""
+    if not configured:  # By default there is insufficient configuration to send a mail
         return
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -37,5 +44,6 @@ def sendmail(subject, body):
             msg.as_string())
         server.quit()
         print('Mail sent')
-    except Exception as ex:
-        print('Error sending mail: {}'.format(str(ex)))
+    except:
+        print('Error sending mail')
+        traceback.print_exc()

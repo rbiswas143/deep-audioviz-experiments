@@ -1,6 +1,10 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
+'''This is the AlexNet implementation from torchvision with a minor edit
+ to make it compatible with different input sizes
+'''
+
 __all__ = ['AlexNet', 'alexnet']
 
 model_urls = {
@@ -39,7 +43,7 @@ class AlexNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), -1)  # Edit
+        x = x.view(x.size(0), -1)  # Edited
         x = self.classifier(x)
         return x
 

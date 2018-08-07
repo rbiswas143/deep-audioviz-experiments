@@ -1,7 +1,9 @@
+"""CLI and utils for training a batch of models and analysing hyper parameter tuning results"""
+
 import train
 import models
 import data_processor as dp
-import utils
+import commons
 
 import argparse
 import torch
@@ -10,6 +12,7 @@ import collections
 
 
 def train_models(training_configs, email=False):
+    """Train a batch of models"""
     for i, config in enumerate(training_configs):
         print('\nTraining Model {} of {}: {}'.format(i + 1, len(training_configs), config.name))
         train.train(config, plot_learning_curves=False, cuda=torch.cuda.is_available(), email=email)
@@ -17,6 +20,7 @@ def train_models(training_configs, email=False):
 
 
 def print_evaluation_report(training_config):
+    """Print the training and evaluation results for a model"""
     # Training Config
     print('Training Config')
     for key, val in training_config.__dict__.items():
@@ -70,6 +74,7 @@ def _get_hps_for_classifier(training_config, checkpoint):
 
 
 def save_evaluation_report(training_configs, config_path):
+    """Compile and save hyper-tuning report for all models in the batch"""
     hps = []
     for i, training_config in enumerate(training_configs):
         print('Saving report for Model {}: {}'.format(i + 1, training_config.name))
@@ -90,6 +95,7 @@ def save_evaluation_report(training_configs, config_path):
 
 
 def save_evaluation_plots(training_configs):
+    """Create and save learning curves for all models in the batch"""
     for i, training_config in enumerate(training_configs):
         print('Saving plot for Model {}: {}'.format(i + 1, training_config.name))
         model = training_config.get_by_model_key(False)
@@ -99,10 +105,11 @@ def save_evaluation_plots(training_configs):
             print('Not evaluated')
             continue
         path = os.path.join(training_config.models_dir, "{}_lc.png".format(training_config.name))
-        utils.save_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, path)
+        commons.save_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, path)
 
 
-def run():
+def cli():
+    """Runs CLI"""
     # Arguments Parser
     parser = argparse.ArgumentParser(description='Hyper Parameter tuning related actions')
     parser.add_argument('-c', '--config_files_path', help='Path to a file containing a list of training config files')
@@ -114,7 +121,7 @@ def run():
     # Parse arguments
     args = parser.parse_args()
 
-    # Get model configs
+    # Get model configs (read a single config file with newline separated paths to model configs)
     if args.config_files_path is None:
         raise Exception('Config file not specified')
     else:
@@ -124,8 +131,10 @@ def run():
 
     # Actions
     if args.mode == 'train':
+        # Train a batch of models
         train_models(train_configs, email=args.email)
     elif args.mode == 'print-report':
+        # Print report for all models
         for i, train_config in enumerate(train_configs):
             if args.dataset and i == 0:
                 dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
@@ -137,12 +146,14 @@ def run():
             print_evaluation_report(train_config)
             print()
     elif args.mode == 'save-hps':
+        # Save hyper parameters for all models
         save_evaluation_report(train_configs, args.config_files_path)
     elif args.mode == 'save-plots':
+        # Save learning curves for all models
         save_evaluation_plots(train_configs)
     else:
         raise Exception('Invalid mode: ' + args.mode)
 
 
 if __name__ == '__main__':
-    run()
+    cli()

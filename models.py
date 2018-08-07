@@ -1,17 +1,27 @@
+"""PyTorch models for Deep Audio Viz
+
+Module Contents:
+    Base Model for any model compatible with Deep Audio Viz training
+    CNN Classifier model - adaptation of VGG and AlexNet
+    Convolution Autoencoder model - Normal, Shared Weights and Skip Connections
+    Model related utils - Checkpoint, analysis config, etc
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 import torch.tensor
 import os
-import utils
+import commons
 import math
 import numpy as np
 
-import alexnet
+import alexnet  # torchvision implementation with minor edits
 
-## Trainded models info
+"""Model Analysis Config"""
 
+# Dictionary defining trained models selected after hyper parameter tuning
 trained_model_configs = {
     'conv_ae_shared_test': 'models/test/conv_autoencoder_shared/config.json',
     'classifier_test': 'models/test/classifier_vgg16/config.json',
@@ -24,14 +34,18 @@ trained_model_configs = {
     'vgg16': 'models/hp_tune_classifier/classifier_mix/vgg16_2/config.json'
 }
 
+# For classifiers, the activations of these layers are used to get extract encodings
 encoding_layer_options = {
     'vgg16': {
         'L14': ('features', 43),
         'L15': ('classifier', 1),
         'L16': ('classifier', 4),
+        'L17': ('classifier', 6),
     },
     'vgg13': {
-        'L10': ('features', 34)
+        'L10': ('features', 34),
+        'L13': ('classifier', 6),
+
     },
     'vgg11': {
         'L8': ('features', 28)
@@ -41,10 +55,11 @@ encoding_layer_options = {
     }
 }
 
+"""Utils"""
 
-## Utils
 
 def initialize_weights(module):
+    """Initializes weights for various types of neural network layers"""
     if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d):
         n = module.kernel_size[0] * module.kernel_size[1] * module.out_channels
         module.weight.data.normal_(0, math.sqrt(2. / n))
@@ -60,9 +75,11 @@ def initialize_weights(module):
     return module
 
 
-## Common model ops
+"""Model helpers"""
+
 
 class ModelBase:
+    """Base class for all models defining core functionality and utilities"""
 
     def __init__(self, cuda=True):
         self.device = torch.device("cuda" if cuda else "cpu")
@@ -70,6 +87,7 @@ class ModelBase:
         self.optimizer = None
 
     def save_state(self, path):
+        """Saves the model weights and optimizer state"""
         os.makedirs(os.path.dirname(path), exist_ok=True)
         state = {
             'model': self.model.state_dict(),
@@ -78,6 +96,7 @@ class ModelBase:
         torch.save(state, path)
 
     def load_state(self, path):
+        """Loads the model weights and optimizer state"""
         if not os.path.isfile(path):
             return None
         state = torch.load(path)
@@ -85,13 +104,16 @@ class ModelBase:
         self.optimizer.load_state_dict(state['optimizer'])
 
     def init_checkpoint(self):
+        """Override this to add model-specific attributes to checkpoint"""
         return {}
 
     def post_evaluation(self, checkpoint=None):
+        """Override this to perform a model-specific task at the end of each epoch after evaluation during training"""
         pass
 
 
 class ModelCheckpoint:
+    """Defines the state of model training at any given time/epoch"""
 
     def __init__(self, model):
         self.model = model
@@ -102,10 +124,11 @@ class ModelCheckpoint:
         self.cv_accuracies = []
         self.training_times = []
         self.model_specific = self.model.init_checkpoint()
-        self.trainable_params = utils.get_trainable_params(model.model)
-        self.loaded = False
+        self.trainable_params = commons.get_trainable_params(model.model)  # Transient (only for reference)
+        self.loaded = False  # Useful for determining if the checkpoint was loaded successfully
 
     def save(self, path):
+        """Saves the checkpoint to disc"""
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save({
             'epoch': self.epoch,
@@ -118,6 +141,7 @@ class ModelCheckpoint:
         }, path)
 
     def load(self, path):
+        """Loads the checkpoint from disc"""
         if not os.path.isfile(path):
             return
         config_dict = torch.load(path)
@@ -128,19 +152,33 @@ class ModelCheckpoint:
         self.cv_accuracies = config_dict['cv_accuracies']
         self.training_times = config_dict['training_times']
         self.model_specific = config_dict['model_specific']
+        # Mark as loaded
         self.loaded = True
 
     def get_dict(self):
         return self.__dict__
 
 
-## VGG / Alex Net
+"""CNN Classifier"""
+
 
 class CNNClassifier(ModelBase):
+    """CNN Classifier model providing adaptations of VGG and AlexNet
+    Arguments:
+        dataset_config: config used to create the dataset used for training (used for getting genres
+          of the input samples)
+        input_dims: dimensions (x, y) of each input sample (Note: no of channels = 1 for MFCC input data)
+        pretrained: True downloads and loads pre-trained weights provided by torchvision
+        cuda: Use True to train on GPU
+        num_classes: No of output genre classes
+        lr: Learning rate (float)
+        batchnorm: Use True to use Batch Normalization
+        arch: Model to load: One of (alexnet, vgg11, vgg13 and vgg16)
+    """
 
     def __init__(self, dataset_config, input_dims=(64, 96), pretrained=True, cuda=True, num_classes=-1,
                  lr=0.001, momentum=0.9, batchnorm=False, arch='vgg16'):
-        # print(num_classes, lr, momentum, batchnorm)
+
         super(CNNClassifier, self).__init__(cuda)
 
         # Model Params
@@ -161,6 +199,7 @@ class CNNClassifier(ModelBase):
         # Validate
         assert tuple(self.input_dims) == (64, 96)
 
+        # Model
         self.model = self._build_model()
 
         # Optimizer
@@ -169,14 +208,11 @@ class CNNClassifier(ModelBase):
         # Loss
         self.loss_fn = nn.CrossEntropyLoss()
 
-        # Cache
+        # Cache (used for polled evaluation)
         self.eval_cache = {}
 
-        # Decay LR by a factor of 0.1 every 7 epochs
-        # self.exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=7, gamma=0.1)
-
     def _build_model(self):
-        # Load pretrained model
+        # Load a pretrained model using 'arch'
         if self.arch == 'vgg11':
             model = torchvision.models.vgg11_bn(pretrained=self.pretrained) if self.batchnorm else \
                 torchvision.models.vgg11(pretrained=self.pretrained)
@@ -193,21 +229,23 @@ class CNNClassifier(ModelBase):
         else:
             raise Exception('Unidentified arch: {}'.format(self.arch))
 
-        # Replace first layer
+        # Replace first layer to match single channel input
         if self.arch == 'alexnet':
+            # Note: Stride of first layer has been changed to make the activations after the first layer
+            # comparable to the corresponding  original activations of AlexNet
             first_layer = nn.Conv2d(1, 64, kernel_size=11, stride=(1, 2), padding=2)
         else:
             first_layer = nn.Conv2d(1, 64, kernel_size=3, padding=1)
         model.features = nn.Sequential(*([initialize_weights(first_layer)]
                                          + list(model.features.children())[1:]))
 
-        # Replace FC layers
+        # Replace fully connected layers to match 'input_dims' (TODO: Remove hardcoded dimensions (64, 96))
         if self.arch == 'alexnet':
             fc_dim = 256 * 6 * 4
         else:
             fc_dim = 512 * 2 * 3
         model.classifier = nn.Sequential(
-            initialize_weights(nn.Linear(fc_dim, 4096)),  # Assuming input dims is (64, 96)
+            initialize_weights(nn.Linear(fc_dim, 4096)),
             nn.ReLU(True),
             nn.Dropout(),
             initialize_weights(nn.Linear(4096, 4096)),
@@ -218,21 +256,26 @@ class CNNClassifier(ModelBase):
         return model.to(self.device)
 
     def init_checkpoint(self):
+        """Adds accuracy metrics to the checkpoint"""
         return {
             'cv_accuracies': [],
             'polled_accuracies': []
         }
 
     def begin_training(self):
+        """To be called before training"""
         self.model.train()
 
     def _process_inputs(self, x):
+        """Coverts a Numpy Array input batch to a PyTorch Tensor of the same"""
         return torch.from_numpy(x.reshape(x.shape[0], 1, x.shape[1], x.shape[2])).to(self.device)
 
     def _process_outputs(self, y):
-        return torch.from_numpy(utils.map_indices_to_genre(y, self.fma_meta_dir, self.fma_type)).to(self.device)
+        """Coverts a Numpy Array of track indices to a PyTorch Tensor of corresponding genre indices"""
+        return torch.from_numpy(commons.map_indices_to_genre(y, self.fma_meta_dir, self.fma_type)).to(self.device)
 
     def train_batch(self, x, y):
+        """Forward and backward pass on a single batch"""
         x = self._process_inputs(x)
         y = self._process_outputs(y)
         y_pred = self.model(x)
@@ -243,6 +286,7 @@ class CNNClassifier(ModelBase):
         return loss.item()
 
     def begin_evaluation(self):
+        """To be called before evaluation. Also, resets the evaluation cache"""
         self.model.eval()
         self.eval_cache = {
             'segment_indices': [],
@@ -253,11 +297,19 @@ class CNNClassifier(ModelBase):
         }
 
     def encode(self, x, block, index):
+        """Extracts the encodings for the given input x from the specified layer
+        Arguments:
+            x: batch obtained from a data partition
+            block: 'features' or 'classifier'
+            index: index of layer in the specified block to extract the encodings forom
+        """
         assert block in ['classifier', 'features']
         x = self._process_inputs(x)
         if block == 'classifier':
+            # Forward pass on classifier block
             x = self.model._modules['features'](x)
             x = x.view(x.size(0), -1)
+        # Layer wise forward pass till the extraction layer is reached
         layers = self.model._modules[block]._modules.values()
         assert index < len(layers)
         for i, layer in enumerate(layers):
@@ -266,6 +318,7 @@ class CNNClassifier(ModelBase):
                 return x
 
     def evaluate(self, x, y_indices):
+        """Computes loss on an evaluation batch. Also, caches info for evaluating accuracies later"""
         x = self._process_inputs(x)
         y_genres = self._process_outputs(y_indices)
         self.eval_cache['segment_indices'].extend(y_indices)
@@ -284,7 +337,7 @@ class CNNClassifier(ModelBase):
             return loss
 
     def post_evaluation(self, checkpoint=None):
-
+        """Computes sample level and track level (polled) accuracies and optionally saves them to the checkpoint"""
         avg_accuracy = self.eval_cache['accuracy_sum'] / self.eval_cache['num_batches']
         if checkpoint is not None:
             checkpoint.model_specific['cv_accuracies'].append(avg_accuracy)
@@ -296,10 +349,12 @@ class CNNClassifier(ModelBase):
         print('Polled accuracy:', polled_accuracy)
 
     def _evaluate_polled(self):
+        """Computes track level (polled) accuracies by aggregating votes across samples"""
         segment_indices = np.array(self.eval_cache['segment_indices']).reshape(-1)
         genre_correct = np.array(self.eval_cache['genre_correct']).reshape(-1)
         genre_pred = np.array(self.eval_cache['genre_pred']).reshape(-1)
 
+        # Track wise correct and predicted genres
         idx_correct = {}
         idx_preds = {}
         for idx, correct, pred in zip(segment_indices, genre_correct, genre_pred):
@@ -308,6 +363,7 @@ class CNNClassifier(ModelBase):
                 idx_preds[idx] = []
             idx_preds[idx].append(pred)
 
+        # Compute correct predictions at track level
         correct_count = 0
         for idx, pred_list in idx_preds.items():
             pred_list_uniq, pred_list_count = np.unique(pred_list, return_counts=True)
@@ -324,14 +380,36 @@ class CNNClassifier(ModelBase):
         return correct_count / len(idx_correct) if len(idx_correct) > 0 else 1
 
 
-## Convolutional Autoencoder
+"""Convolutional Autoencoder"""
+
 
 class _ConvAutoencoderModel(nn.Module):
+    """PyTorch model providing convoultional autoencoder with shared weights and skip connections
+    The model is composed of repating pattern of convolutional and pooling blocks and the encoder and decoder are
+    symmetric. A block in the encoder is comprised of 2 convolutional layers with filter sizes N and 2*N followed
+    by a pooling layer with stride (2x2). The covolutional blocks are followed by a number of fully connected layers
+    Arguments:
+        input_dims: dimensions (x, y) of each input sample (Note: no of channels = 1 for MFCC input data)
+        enc_len: Size of middle/encoding layer
+        num_init_filters: No of filters in the first convolutional layer (No of filters double/halve with each layer)
+        num_pools: No of repeating blocks in the encoder (and similarly decoder)
+        num_fc: No of fully connected layers in the encoder (and similarly decoder)
+        fc_scale_down: Factor by which no of units in successive fully connected layers are reduced
+        kernel_size: Kernel size used in the convolution and deconvolution operations
+        padding: Padding used in the convolution and deconvolution operations
+        shared_weights: If True, decoder does not have its own weights and it uses the encoder's weights instead
+        skip_connections: If True, connections are added from the convolutional blocks to their corresponding
+          deconvolutional counterparts
+        enc_activation: Activation used in final layer (Intermediate layers use ReLU). Sigmoid (default) ensures that
+          the range of predictions is same as the processed input data, i.e., between 0 and 1
+    """
 
     def __init__(self, input_dims, enc_len, num_init_filters=16, num_pools=2,
                  num_fc=2, fc_scale_down=8, kernel_size=5, padding=2,
                  shared_weights=False, skip_connections=False, enc_activation='sigmoid'):
         super(_ConvAutoencoderModel, self).__init__()
+
+        # Parameters
         self.input_dims = input_dims
         self.enc_len = enc_len
         self.num_init_filters = num_init_filters
@@ -344,10 +422,10 @@ class _ConvAutoencoderModel(nn.Module):
         self.skip_connections = skip_connections
         self.enc_activation = enc_activation
 
+        # Validate
         self._validate_hp()
 
         # Encoder
-
         curr_filter, next_filter = 1, num_init_filters
         for p in range(num_pools):
             self.add_module('conv{}a'.format(p),
@@ -356,7 +434,6 @@ class _ConvAutoencoderModel(nn.Module):
                             initialize_weights(nn.Conv2d(next_filter, next_filter, kernel_size, padding=padding)))
             self.add_module('pool{}'.format(p), nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True))
             curr_filter, next_filter = next_filter, next_filter * 2
-
         fc_inp_len = None
         for i in range(num_fc):
             fc_inp_len = self._get_fc_len() if fc_inp_len is None else fc_out_len
@@ -364,7 +441,6 @@ class _ConvAutoencoderModel(nn.Module):
             self.add_module('fc{}'.format(i), initialize_weights(nn.Linear(fc_inp_len, fc_out_len)))
 
         # Decoder
-
         dfc_inp_len = None
         for i in range(num_fc):
             dfc_inp_len = dfc_out_len if i > 0 else enc_len
@@ -373,7 +449,6 @@ class _ConvAutoencoderModel(nn.Module):
                 self.register_parameter('dfc{}_bias'.format(i), nn.Parameter(torch.zeros(dfc_out_len)))
             else:
                 self.add_module('dfc{}'.format(i), initialize_weights(nn.Linear(dfc_inp_len, dfc_out_len)))
-
         curr_filter = num_init_filters * (2 ** (num_pools - 1))
         next_filter = int(curr_filter / 2)
         for p in range(num_pools):
@@ -383,6 +458,7 @@ class _ConvAutoencoderModel(nn.Module):
             self.add_module('unpool{}'.format(p), nn.MaxUnpool2d(kernel_size=2, stride=2))
 
             if self.shared_weights:
+                # For shared weights, bias cannot be used from the encoder. Use own bias
                 self.register_parameter('deconv{}a_bias'.format(p), nn.Parameter(torch.zeros(curr_filter)))
             else:
                 self.add_module('deconv{}a'.format(p), initialize_weights(
@@ -398,26 +474,31 @@ class _ConvAutoencoderModel(nn.Module):
         self.layer_dict = {name: layer for name, layer in self.named_children()}
         self.param_dict = {name: layer for name, layer in self.named_parameters()}
 
-        # Cache
+        # Cache (for skip connections)
         self.pool_idx = {}
         self.conv_outputs = {}
 
     def _validate_hp(self):
+        """Checks that the current parameters will generate a valid mode"""
         fc_len = self._get_fc_len()
         assert self.input_dims[0] % (2 ** self.num_pools) == 0 and self.input_dims[1] % (2 ** self.num_pools) == 0
         assert fc_len % (self.fc_scale_down ** (self.num_fc - 1)) == 0
         assert fc_len / (self.fc_scale_down ** (self.num_fc - 1)) >= self.enc_len
 
     def _get_fc_len(self):
+        """Computes the size of the first fully connected layer"""
         return (self.num_init_filters * (2 ** (self.num_pools - 1))) * int(
             self.input_dims[0] * self.input_dims[1] / (2 ** (self.num_pools * 2)))
 
     def _get_conv_dims(self):
+        """Computes the dimensions of the last convolutional block"""
         return ((2 ** (self.num_pools - 1)) * self.num_init_filters,
                 int(self.input_dims[0] / (2 ** self.num_pools)),
                 int(self.input_dims[1] / (2 ** self.num_pools)))
 
     def encode(self, x):
+        """Forward pass up to middle/encoding layer"""
+
         # Conv blocks
         for p in range(self.num_pools):
             k_conv_a = 'conv{}a'.format(p)
@@ -445,6 +526,8 @@ class _ConvAutoencoderModel(nn.Module):
         return x
 
     def decode(self, x):
+        """Forward pass from middle/encoding layer to the model output/reconstructed input"""
+
         # FC blocks
         for i in range(self.num_fc):
             i_fwd = self.num_fc - i - 1
@@ -452,6 +535,7 @@ class _ConvAutoencoderModel(nn.Module):
             k_dfc = 'dfc{}'.format(i)
             k_dfc_bias = 'dfc{}_bias'.format(i)
             if self.shared_weights:
+                # For shared weights, transpose weights of FC in encoder for use in decoder
                 x = F.relu(F.linear(
                     x, self.layer_dict[k_fc].weight.transpose(0, 1),
                     bias=self.param_dict[k_dfc_bias]))
@@ -470,8 +554,10 @@ class _ConvAutoencoderModel(nn.Module):
             k_deconv_a = 'deconv{}a'.format(p)
             k_deconv_a_bias = 'deconv{}a_bias'.format(p)
             if self.skip_connections:
+                # For skip connections, add the output of the corresponding convolutional block
                 x = F.relu(x + self.conv_outputs[k_conv_b])
             if self.shared_weights:
+                # For shared weights, use the weights of the corresponding convolutional block but not bias
                 x = F.relu(F.conv_transpose2d(
                     x, self.layer_dict[k_conv_b].weight,
                     bias=self.param_dict[k_deconv_a_bias], padding=self.padding))
@@ -495,10 +581,12 @@ class _ConvAutoencoderModel(nn.Module):
         return x
 
     def forward(self, x):
+        """Complete forward pass"""
         return self.decode(self.encode(x))
 
 
 class ConvAutoencoder(ModelBase):
+    """Wrapper around _ConvAutoencoderModel"""
 
     def __init__(self, cuda=True, input_dims=(64, 96), enc_len=10, lr=0.001, momentum=0.9, **kwargs):
         super(ConvAutoencoder, self).__init__(cuda)
@@ -517,12 +605,15 @@ class ConvAutoencoder(ModelBase):
         self.loss_fn = nn.MSELoss()
 
     def begin_training(self):
+        """To be called before training"""
         self.model.train()
 
     def _process_inputs(self, x):
+        """Coverts a Numpy Array input batch to a PyTorch Tensor of the same"""
         return torch.from_numpy(x.reshape(x.shape[0], 1, x.shape[1], x.shape[2])).to(self.device)
 
     def train_batch(self, x, _):
+        """Forward and backward pass on a single batch"""
         x = y = self._process_inputs(x)
         y_pred = self.model(x)
         loss = self.loss_fn(y_pred, y)
@@ -532,13 +623,16 @@ class ConvAutoencoder(ModelBase):
         return loss.item()
 
     def encode(self, x):
+        """Extracts the encodings for the given input x from the encoding/middle layer"""
         x = self._process_inputs(x)
         return self.model.encode(x)
 
     def begin_evaluation(self):
+        """To be called before evaluation"""
         self.model.eval()
 
     def evaluate(self, x, _):
+        """Computes loss on an evaluation batch"""
         x = y = self._process_inputs(x)
         with torch.no_grad():
             y_pred = self.model(x)

@@ -1,3 +1,6 @@
+"""Classes and methods used across the project"""
+
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -6,8 +9,18 @@ import time
 
 import fma_utils
 
+"""Generic Utils"""
+
 
 class ProgressBar:
+    """Terminal progress bar
+    Arguments:
+        total: Relative size corresponding to completed task
+        status: In progress status message
+        bar_len: Actual size of progress bar when full
+        max_len: Anything beyond this is truncated
+        update_freq: Write to terminal st this rate (increase to save time on i/o)
+    """
 
     def __init__(self, total, status='', **kwargs):
         self.total = total
@@ -22,19 +35,18 @@ class ProgressBar:
         self.completed = False
 
     def update(self, count):
+        """Updates the progress bar with a new progress value"""
+
         curr_time = time.time()
         if self.update_time is not None and self.update_time + self.params['update_freq'] > curr_time:
-            # print('No')
             return
-        # if self.update_time is not None:
-        #     print('Debug', self.update_time, self.update_time + self.params['update_freq'], curr_time)
         self.update_time = curr_time
 
         filled_len = self.params['bar_len'] if self.total == 0 else \
             int(round(self.params['bar_len'] * count / float(self.total)))
         percents = 100.0 if self.total == 0 else round(100.0 * count / float(self.total), 1)
 
-        clear = ' ' * self.params['max_len']
+        clear = ' ' * self.params['max_len']  # Blank line is used to clear previous content on the terminal
         bar = '=' * filled_len + '-' * (self.params['bar_len'] - filled_len)
         output = ('[%s] %s%s ...%s' % (bar, percents, '%', self.status))
         if len(output) > self.params['max_len']:
@@ -46,6 +58,7 @@ class ProgressBar:
         sys.stdout.flush()
 
     def complete(self, status=''):
+        """Fills the progress bar to completion and updates the status message"""
         self.completed = True
         self.status = status
         self.update_time = None
@@ -53,6 +66,8 @@ class ProgressBar:
 
 
 def cached(key_fn=None):
+    """Decorator for caching method outputs by key"""
+
     def args_wrap(fn):
         cache = {}
 
@@ -69,6 +84,13 @@ def cached(key_fn=None):
 
 def plot_learning_curve(data_a, data_b, title='Learning Curve', x_label='Epoch', y_label='Loss', legend_a='Train',
                         legend_b='CV', block=False, close=False):
+    """Plots learning curve for a training process in a non-blocking way
+    Arguments:
+        data_a: Numpy Array or list values to plot (typically training set errors)
+        data_b: Optional Numpy Array or list values to plot (typically cv set errors)
+        block: Set True to block code execution while the plot is displayed
+        close: Set True to close an existing plot before plotting. Can be useful for showing plots successively
+    """
     if close:
         plt.close()
     data_a = np.array(data_a).reshape(-1)
@@ -85,6 +107,12 @@ def plot_learning_curve(data_a, data_b, title='Learning Curve', x_label='Epoch',
 
 def save_learning_curve(data_a, data_b, path, title='Learning Curve', x_label='Epoch', y_label='Loss', legend_a='Train',
                         legend_b='CV'):
+    """Saves learning curve for a training process in a non-blocking way
+    Arguments:
+        data_a: Numpy Array or list values to plot (typically training set errors)
+        data_b: Optional Numpy Array or list values to plot (typically cv set errors)
+        path: Save path
+    """
     data_a = np.array(data_a).reshape(-1)
     plt.plot(np.arange(1, data_a.size + 1), data_a, label=legend_a)
     if data_b is not None:
@@ -98,12 +126,7 @@ def save_learning_curve(data_a, data_b, path, title='Learning Curve', x_label='E
     plt.close()
 
 
-def get_trainable_params(model):
-    count = 0
-    for param in list(model.parameters()):
-        if param.requires_grad:
-            count += np.prod(param.size())
-    return count
+"""FMA DataSet Utils"""
 
 
 @cached()
@@ -121,6 +144,7 @@ def get_fma_genres(meta_dir):
 
 @cached(lambda *a, **k: str(a + tuple(k.values())))
 def get_genres_map(meta_dir, fma_type, reverse=False):
+    """Gets unique genres from the FMA DataSet, deterministically assigns them indices, and returns a map"""
     tracks = get_fma_meta(meta_dir, fma_type)
     unique = enumerate(sorted([g for g in tracks['track', 'genre_top'].unique() if g is not np.nan]))
     if reverse:
@@ -130,7 +154,44 @@ def get_genres_map(meta_dir, fma_type, reverse=False):
 
 
 def map_indices_to_genre(seg_indices, meta_dir, fma_type):
+    """Maps a list of track indices to genre indices (as assigned by 'get_genres_map')"""
     genre_map = get_genres_map(meta_dir, fma_type, reverse=True)
     tracks = get_fma_meta(meta_dir, fma_type)
     tracks = tracks['track'].loc[seg_indices]
     return np.array(list(map(lambda g: genre_map[g], tracks['genre_top']))).astype(np.long)
+
+
+"""Base Classes"""
+
+
+class BaseConfig:
+    """Base class for configurations with some helping utilities"""
+
+    @classmethod
+    def load_from_file(cls, path):
+        """Initializes default config and overrides it with config dictionary obtained from a json file"""
+        config = cls()
+        with open(path, 'r') as cf:
+            config.update(json.load(cf))
+        return config
+
+    def update(self, dict_):
+        """Overrides config with dictionary"""
+        for key in dict_.keys():
+            setattr(self, key, dict_[key])
+
+    def get_dict(self):
+        """Returns all config as a dictionary"""
+        return self.__dict__
+
+
+"""PyTorch Utils"""
+
+
+def get_trainable_params(model):
+    """Counts the trainable parameters of a PyTorch model"""
+    count = 0
+    for param in list(model.parameters()):
+        if param.requires_grad:
+            count += np.prod(param.size())
+    return count

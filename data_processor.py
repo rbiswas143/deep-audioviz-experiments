@@ -1,20 +1,20 @@
-""" Pre-process and partition the FMA DataSet for later training
-    
-    Module Contents:
-        A CLI for creating processed audio partitions
-        DataSet partitioning logic and helpers
-        Configuration classes with default config (overridden by JSON config via CLI) driving the processing of tracks
-        Multiple processing modes: End to End (e2e), MFCCs
-        Other pre-processing related utilities
-        Sanity tests for all functionality
-    
-    Notes:
-        The data processing is resumable. Feel free to kill the script and resume
-        Data (processes data, config, etc) is stored in an hdf5 file and a reader is provided to abstract data access
+"""Pre-process and partition the FMA DataSet for later training
+
+Module Contents:
+    A CLI for creating processed audio partitions
+    DataSet partitioning logic and helpers
+    Configuration classes with default config (overridden by JSON config via CLI) driving the processing of tracks
+    Multiple processing modes: End to End (e2e), MFCCs
+    Other pre-processing related utilities
+    Core tests for all functionality
+
+Notes:
+    The data processing is resumable. Feel free to kill the script and resume
+    Data (processed dataset, config, etc) is stored in an hdf5 file and I/O utils have been provided to abstract data access
 """
 
 import fma_utils
-import utils
+import commons
 import emailer
 
 import librosa
@@ -29,111 +29,9 @@ import shutil
 import atexit
 import traceback
 import time
-import sys
 
 
-##
-# Config
-##
-
-class BaseConfig:
-
-    @classmethod
-    def load_from_file(cls, path):
-        """Initializes default config and overrides it with config dictionary obtained from a json file"""
-        config = cls()
-        with open(path, 'r') as cf:
-            config.update(json.load(cf))
-        return config
-
-    def update(self, dict_):
-        """Overrides config with dictionary"""
-        for key in dict_.keys():
-            setattr(self, key, dict_[key])
-
-    def get_dict(self):
-        """Returns all config as a dictionary"""
-        return self.__dict__
-
-
-class DataPrepConfig(BaseConfig):
-    """Base config class for all pre-processors"""
-
-    def __init__(self):
-        self.name = 'data_{0}'.format(int(time.time()))
-        self.fma_audio_dir = 'datasets/fma/fma_small'
-        self.fma_meta_dir = 'datasets/fma/fma_metadata'
-        self.fma_type = 'small'  # small/medium
-        self.num_tracks = 7500
-        self.sr = 44100
-        self.datasets_dir = 'datasets/processed'
-        self.do_re_sample = True
-        self.test_split = 0.1
-        self.cv_split = 0.1
-        self.num_train_partitions = 6
-        self.scaler = 'standard'
-
-    def get_dataset_path(self):
-        return os.path.join(self.datasets_dir, self.name + '.h5')
-
-    @staticmethod
-    def load_from_dataset(path):
-        mode = read_h5_attrib('mode', path)
-        config = get_config_cls(mode)()
-        config.update(read_h5_attrib('config', path, deserialize=True))
-        return config
-
-
-class MfccDataPrepConfig(DataPrepConfig):
-    """Config for MFCC Pre-processor"""
-
-    def __init__(self):
-        DataPrepConfig.__init__(self)
-        self.segments_per_track = None
-        self.frames_per_segment = 90
-        self.num_mfcc = 20
-        self.mfcc_hops = 512
-        self.n_fft = 2048
-
-
-class E2eDataPrepConfig(DataPrepConfig):
-    """Config for End to End Pre-processor"""
-
-    def __init__(self):
-        DataPrepConfig.__init__(self)
-        self.segments_per_track = None
-        self.frames_per_segment = self.sr * 1  # sec
-
-
-def get_config_cls(mode):
-    """Returns config class for a pre-processing mode"""
-    return {
-        'e2e': E2eDataPrepConfig,
-        'mfcc': MfccDataPrepConfig
-    }[mode]
-
-
-# @unittest.skip
-class DataPrepConfigTests(unittest.TestCase):
-
-    def test_update(self):
-        config = DataPrepConfig()
-        test_config = {
-            'name': 'temp',
-            'num_tracks': -1
-        }
-        config.update(test_config)
-        # Original Attribs
-        self.assertEqual(config.fma_type, 'small')
-        self.assertEqual(config.sr, 44100)
-        # Updated Attribs
-        self.assertEqual(config.name, 'temp')
-        self.assertEqual(config.num_tracks, -1)
-
-
-###
-# h5 I/O wrappers
-###
+"""H5 I/O utils for Pre-processed DataSets"""
 
 
 def read_h5_data(key, dataset_path, dtype=np.float32):
@@ -178,8 +76,8 @@ def write_h5_attrib(key, value, dataset_path, serialize=False):
         dataset.attrs[key] = value
 
 
-# @unittest.skip
 class H5HelperTests(unittest.TestCase):
+    """Tests all H5 I/O utils"""
 
     def setUp(self):
         self.root = 'test'
@@ -247,47 +145,106 @@ class H5HelperTests(unittest.TestCase):
         self.assertEqual(ret_value, value1)
 
 
-##
-# Processing Utils
-##
+"""Dataset Pre-processing Configuration """
 
 
-def cached(func):
-    """Decorator for caching function output"""
-    cache = {}
+class DataPrepConfig(commons.BaseConfig):
+    """Base config class for all dataset pre-processors
+    Defaults are defined here but they should be overridden using a JSON config file
+    """
 
-    def get_key(*args, **kwargs):
-        key = 'cache'
-        hshs = [str(arg.__hash__()) for arg in args]
-        hshs += [str(arg.__hash__()) for arg in kwargs.values()]
-        hshs.sort()
-        return '_'.join([key] + hshs)
+    def __init__(self):
+        self.name = 'data_{0}'.format(int(time.time()))
+        self.fma_audio_dir = 'datasets/fma/fma_small'
+        self.fma_meta_dir = 'datasets/fma/fma_metadata'
+        self.fma_type = 'small'  # small/medium/large
+        self.num_tracks = 7500
+        self.sr = 44100
+        self.datasets_dir = 'datasets/processed'
+        self.do_re_sample = True
+        self.test_split = 0.1
+        self.cv_split = 0.1
+        self.num_train_partitions = 6
+        self.scaler = 'standard'
 
-    def wrapper(*args, **kwargs):
-        nonlocal cache
-        key = get_key(*args, **kwargs)
-        if key not in cache:
-            cache[key] = func(*args, **kwargs)
-        return cache[key]
+    def get_dataset_path(self):
+        """Builds dataset path from name and directory"""
+        return os.path.join(self.datasets_dir, self.name + '.h5')
 
-    return wrapper
-
-
-@cached
-def get_fma_meta(meta_dir, fma_type):
-    """Fetches meta data for all tracks of an FMA type as a Pandas DataFrame"""
-    all_tracks = fma_utils.load(os.path.join(meta_dir, 'tracks.csv'))
-    return all_tracks[all_tracks['set', 'subset'] == fma_type]
+    @staticmethod
+    def load_from_dataset(path):
+        """Loads the saved dataset config"""
+        mode = read_h5_attrib('mode', path)
+        config = get_config_cls(mode)()
+        config.update(read_h5_attrib('config', path, deserialize=True))
+        return config
 
 
-@cached
-def get_fma_genres(meta_dir):
-    """Fetches meta data for all genres as a Pandas DataFrame"""
-    return fma_utils.load(os.path.join(meta_dir, 'genres.csv'))
+class MfccDataPrepConfig(DataPrepConfig):
+    """Config for MFCC Dataset Pre-processor
+    The MFCC Pre-processor converts the raw audio tracks into corresponding Mel-frequency
+    cepstral coefficients with the specified configuration
+    """
+
+    def __init__(self):
+        DataPrepConfig.__init__(self)
+        # No of MFCC samples to extract from each track. Use None to extract all samples
+        self.segments_per_track = None
+        # No of MFCC frames per sample
+        self.frames_per_segment = 90
+        # No of MFCC bins per sample
+        self.num_mfcc = 20
+        # FFT hop length as no of audio frames
+        self.mfcc_hops = 512
+        # FFT window size as no of audio frames
+        self.n_fft = 2048
+
+
+class E2eDataPrepConfig(DataPrepConfig):
+    """Config for End to End Pre-processor
+    The E2E Pre-processor leaves the audio data in the time domain breaking it down into samples
+    as specified by the configuration
+    """
+
+    def __init__(self):
+        DataPrepConfig.__init__(self)
+        # No of audio samples to extract from each track. Use None to extract all samples
+        self.segments_per_track = None
+        # No of audio frames per sample
+        self.frames_per_segment = self.sr * 1  # sec
+
+
+def get_config_cls(mode):
+    """Returns config class for a pre-processing mode"""
+    return {
+        'e2e': E2eDataPrepConfig,
+        'mfcc': MfccDataPrepConfig
+    }[mode]
+
+
+class DataPrepConfigTests(unittest.TestCase):
+    """Tests dataset pre-processing configuration related utilities"""
+
+    def test_update(self):
+        config = DataPrepConfig()
+        test_config = {
+            'name': 'temp',
+            'num_tracks': -1
+        }
+        config.update(test_config)
+        # Original Attribs
+        self.assertEqual(config.fma_type, 'small')
+        self.assertEqual(config.sr, 44100)
+        # Updated Attribs
+        self.assertEqual(config.name, 'temp')
+        self.assertEqual(config.num_tracks, -1)
+
+
+"""Utils"""
 
 
 def sample_segments(segments, req_samples):
-    """Returns a random sample form a list of segments"""
+    """Returns random samples form a list of segments"""
     sample_idx = np.arange(segments.shape[0])
     np.random.shuffle(sample_idx)
     sample_idx = sample_idx[:req_samples]
@@ -309,8 +266,8 @@ def load_track(path, sr, do_re_sample=True):
     return audio_data
 
 
-# @unittest.skip
 class UtilsTests(unittest.TestCase):
+    """Tests all utils"""
 
     def test_sample_segments(self):
         segments = np.random.rand(10, 10)
@@ -319,22 +276,6 @@ class UtilsTests(unittest.TestCase):
         segments = np.random.rand(10, 4, 4, 4)
         sampled = sample_segments(segments, 2)
         self.assertEqual(sampled.shape, (2, 4, 4, 4))
-
-    def test_cache(self):
-        func = cached(lambda x: np.random.rand(x))
-        data1 = func(10)
-        self.assertEqual(data1.shape, (10,))
-        data2 = func(10)
-        self.assertIs(data1, data2)
-        data3 = func(5)
-        self.assertIsNot(data1, data3)
-
-    def test_get_fma_meta(self):
-        meta_dir = 'datasets/fma/fma_metadata'
-        meta = get_fma_meta(meta_dir, 'small')
-        self.assertIsInstance(meta, pd.DataFrame)
-        meta = get_fma_genres(meta_dir)
-        self.assertIsInstance(meta, pd.DataFrame)
 
     def test_load_track(self):
         # Valid sr
@@ -349,15 +290,21 @@ class UtilsTests(unittest.TestCase):
         self.assertIsInstance(track_data, np.ndarray)
 
 
-##
-# Pre-precess single tracks
-##
+"""Single Track Pre-processors"""
 
 
 def pre_process_track_e2e(audio_path, config, sample=True):
     """Processes an audio track for End to End training
-        Each track is broken down into #segments=segments_per_track of length #frames=frames_per_segment
+    Arguments:
+        audio_path: Path to audio track
+        config: Instance of E2eConfig. Each track is broken down into "config.segments_per_track" segments of
+          length "config.frames_per_segment"
+        sample: Whether to sample and shuffle samples from the track. False can be useful for maintaining the
+          order of processed samples
+    Returns:
+        Numpy array storing the processed data or None if the processing fails
     """
+
     # Load audio data
     audio_data = load_track(audio_path, config.sr, config.do_re_sample)
     if audio_data is None:
@@ -382,9 +329,18 @@ def pre_process_track_e2e(audio_path, config, sample=True):
 
 
 def pre_process_track_mfcc(audio_path, config, sample=True):
-    """Processes an audio track for training in frequency domain using MFCCs
-        Each track is broken down into #segments=segments_per_track each of shape (num_mfcc, frames_per_segment)
+    """Processes an audio track by converting it to its MFCCs
+    Arguments:
+        audio_path: Path to audio track
+        config: Instance of MfccConfig. Each track is coverted into its MFCCs using "config.num_mfcc" bins,
+          FFT hop size equal to "config.mfcc_hops" and FFT window size equal to "config.n_fft". The MFCC data
+          is then broken down into "config.segments_per_track" segments of length "config.frames_per_segment"
+        sample: Whether to sample and shuffle processed MFCC samples. False can be useful for maintaining the
+          order of processed samples
+    Returns:
+        Numpy array storing the processed data or None if the processing fails
     """
+
     # Load audio data
     audio_data = load_track(audio_path, config.sr, config.do_re_sample)
     if audio_data is None:
@@ -420,7 +376,7 @@ def pre_process_track_mfcc(audio_path, config, sample=True):
 
 
 def pre_process_track(audio_path, mode, config, sample=True):
-    """Assigns the processing of a track to an appropriate processor using mode"""
+    """Assigns the processing of a track to an appropriate processor using 'mode'"""
     if mode == 'e2e':
         track_data = pre_process_track_e2e(audio_path, config, sample=sample)
     elif mode == 'mfcc':
@@ -431,6 +387,7 @@ def pre_process_track(audio_path, mode, config, sample=True):
 
 
 class PreProcessTests(unittest.TestCase):
+    """Tests single track pre-processors"""
 
     def setUp(self):
         self.track_index = 2
@@ -475,202 +432,21 @@ class PreProcessTests(unittest.TestCase):
         self.assertGreater(segment_data.shape[0], 10)
 
 
-###
-# Partition Scaling
-###
-
-def scale_partition_with_standard_scaler(partition, mean, std):
-    """Sales a partition with loaded data"""
-    if not partition.is_loaded():
-        raise Exception('Data for partition {} is not loaded'.format(partition.key))
-    if partition.segment_data.size == 0:
-        return
-    data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
-    # data -  mean.reshape(1, -1)
-    # data = data / std.reshape(1, -1)
-    data -= mean
-    data /= std
-
-
-def fit_standard_scaler_on_partitions(partitions, dataset_path):
-    norms = load_scaler_norms(dataset_path)
-    if norms is not None:
-        mean, std = norms
-    else:
-        print('Computing Norms')
-        count = 0
-        total_sum = None
-        total_square_sum = None
-        for partition in partitions:
-            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
-                print('Ignoring partition:', partition.key)
-                continue
-            partition.load_data()
-            data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
-            count += partition.segment_data.shape[0]
-            if total_sum is None:
-                total_sum = np.zeros(data.shape[1])
-                total_square_sum = np.zeros(data.shape[1])
-            total_sum += data.sum(axis=0)
-            total_square_sum += np.square(data).sum(axis=0)
-            partition.flush_data()
-        mean = total_sum / count
-        std = np.sqrt(((total_square_sum - (2 * mean * total_sum)) / count) + np.square(mean))
-        norms = (mean, std)
-        save_scaler_norms(norms, dataset_path)
-    for partition in partitions:
-        if partition.scaled:
-            continue
-        print('Scaling Partition', partition.key)
-        partition.load_data()
-        scale_partition_with_standard_scaler(partition, mean, std)
-        partition.dirty = True
-        partition.scaled = True
-        partition.save()
-        partition.flush_data()
-
-
-def scale_partition_with_minmax_scaler(partition, abs_min, abs_max):
-    """Sales a partition with loaded data"""
-    if not partition.is_loaded():
-        raise Exception('Data for partition {} is not loaded'.format(partition.key))
-    data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
-    data -= abs_min
-    data /= (abs_max - abs_min)
-
-
-def fit_minmax_scaler_on_partitions(partitions, dataset_path):
-    norms = load_scaler_norms(dataset_path)
-    if norms is not None:
-        abs_min, abs_max = norms
-    else:
-        print('Computing Norms')
-        abs_min = None
-        abs_max = None
-        for partition in partitions:
-            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
-                print('Ignoring partition:', partition.key)
-                continue
-            partition.load_data()
-            data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
-            if abs_min is None:
-                abs_min = data.min(axis=0)
-                abs_max = data.max(axis=0)
-            else:
-                abs_min = np.minimum(abs_min, data.min(axis=0))
-                abs_max = np.maximum(abs_max, data.max(axis=0))
-            partition.flush_data()
-        norms = (abs_min, abs_max)
-        save_scaler_norms(norms, dataset_path)
-    for partition in partitions:
-        if partition.scaled:
-            continue
-        print('Scaling Partition', partition.key)
-        partition.load_data()
-        scale_partition_with_minmax_scaler(partition, abs_min, abs_max)
-        partition.dirty = True
-        partition.scaled = True
-        partition.save()
-        partition.flush_data()
-
-
-def fit_scaler_on_partitions(partitions, dataset_path, scaler='standard'):
-    if scaler == 'standard':
-        fit_standard_scaler_on_partitions(partitions, dataset_path)
-    elif scaler == 'minmax':
-        fit_minmax_scaler_on_partitions(partitions, dataset_path)
-    else:
-        raise Exception('Invalid scaler: {}'.format(scaler))
-
-
-def save_scaler_norms(norms, dataset_path):
-    norms_proc = []
-    for norm in norms:
-        norms_proc.append(norm.tolist())
-    write_h5_attrib('scaler_norms', norms_proc, dataset_path, serialize=True)
-
-
-def load_scaler_norms(dataset_path):
-    norms_proc = read_h5_attrib('scaler_norms', dataset_path, deserialize=True)
-    if norms_proc is None:
-        return None
-    norms = []
-    for norm in norms_proc:
-        norms.append(np.array(norm))
-    return norms
-
-
-# @unittest.skip
-class PartitionScalerTests(unittest.TestCase):
-
-    def setUp(self):
-        self.root = 'test'
-        self.dataset_path = os.path.join(self.root, 'dataset')
-
-    def tearDown(self):
-        shutil.rmtree(self.root, ignore_errors=True)
-
-    # @unittest.skip
-    def test_standard_scaler(self):
-        test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
-        test_data_scaled = test_data - test_data[:8, :].mean(axis=0)
-        test_data_scaled /= test_data[:8, :].std(axis=0)
-        pkeys = ['p1', 'p2', get_partition_key('cv')]
-        pdata = [test_data[:5, :], test_data[5:8, :], test_data[8:, :]]
-        partitions = []
-        for i in range(3):
-            partition = Partition(pkeys[i], np.array([]), self.dataset_path)
-            partition.segment_data = pdata[i]
-            partition.segment_indices = []
-            partition.dirty = True
-            partition.save()
-            partitions.append(partition)
-        fit_standard_scaler_on_partitions(partitions, self.dataset_path)
-        scaled_data = []
-        for i in range(3):
-            partitions[i].load_data()
-            scaled_data.extend(partitions[i].segment_data.tolist())
-        scaled_data = np.array(scaled_data).astype(np.float32)
-        self.assertEqual(np.rint(scaled_data - test_data_scaled).sum(), 0)
-
-    def test_minmax_scaler(self):
-        test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
-        test_data_scaled = test_data - test_data[:7, :].min(axis=0)
-        test_data_scaled /= (test_data[:7, :].max(axis=0) - test_data[:7, :].min(axis=0))
-        pkeys = ['p1', 'p2', get_partition_key('test')]
-        pdata = [test_data[:5, :], test_data[5:7, :], test_data[7:, :]]
-        partitions = []
-        for i in range(3):
-            partition = Partition(pkeys[i], np.array([]), self.dataset_path)
-            partition.segment_data = pdata[i]
-            partition.segment_indices = []
-            partition.dirty = True
-            partition.save()
-            partitions.append(partition)
-        fit_minmax_scaler_on_partitions(partitions, self.dataset_path)
-        scaled_data = []
-        for i in range(3):
-            partitions[i].load_data()
-            scaled_data.extend(partitions[i].segment_data.tolist())
-        scaled_data = np.array(scaled_data).astype(np.float32)
-        # self.assertEqual(np.rint(scaled_data - test_data_scaled).sum(), 0
-        self.assertTrue(np.array_equal(scaled_data, test_data_scaled))
-
-
-###
-# Partitions
-###
+"""DataSet Partitioning"""
 
 
 class Partition:
-    """Represent a single partiton of the DataSet that can be loaded and processed in memory"""
+    """Represents a single partition of the DataSet that can be loaded and processed in memory.
+    The dataset is processed and stored in partitions. At a time, a single partition should be
+    loaded and used. The Partition class and associated helpers make this easy.
+    """
 
     def __init__(self, key, indices, dataset_path):
-        self.key = key  # Unique
+        self.key = key  # Unique key
         self.track_indices = indices  # FMA track indices
-        self.dataset_path = dataset_path
-        self.segment_data = None  # np array (num_segments x feature1 x feature2)
-        self.segment_indices = None  # np array (num_segments x 1)
+        self.dataset_path = dataset_path  # H5 file path where this partition is saved
+        self.segment_data = None  # Numpy Array (num_segments x *(sample_dims))
+        self.segment_indices = None  # Numpy Array (num_segments x 1)
         self.cached = False  # Is data processed and saved?
         self.dirty = False  # Need to save data?
         self.scaled = False  # Scaling complete?
@@ -678,7 +454,7 @@ class Partition:
     def process_data(self, mode, config):
         """Start/Resume processing tracks in the current partition"""
 
-        # print()
+        # Getting all processed track indices and storing them in a list
         done_indices = [] if self.segment_indices is None else set(np.unique(self.segment_indices))
         if self.segment_data is None:
             self.segment_data = []
@@ -688,49 +464,51 @@ class Partition:
             self.segment_data = self.segment_data.tolist()
             self.segment_indices = self.segment_indices.tolist()
 
-        progress = utils.ProgressBar(
+        # Progress bar that updates with each track
+        progress = commons.ProgressBar(
             len(self.track_indices),
             status="Processing {0} tracks in partition {1}".format(len(self.track_indices), self.key)
         )
+
         for curr_track, track_index in enumerate(self.track_indices):
 
-            # Track already processed?
+            # Track already processed? Skip it.
             if track_index not in done_indices:
-                # Pre-process and store in cache
+
+                # Load track and pre-process it
                 audio_path = fma_utils.get_audio_path(config.fma_audio_dir, track_index)
                 segment_data = pre_process_track(audio_path, mode, config)
                 if segment_data is None:
                     continue
+                # Add processed samples and corresponding track track indices to partition level lists
                 segment_count = segment_data.shape[0]
                 self.segment_data.extend(segment_data)
                 self.segment_indices.extend([track_index] * segment_count)
+                # At least one track has been succesfully processed. Mark partition for saving
                 self.dirty = True
 
-            # Print status
-            # if curr_track % 30 == 0:
-            #     print('Processed {0} of {1} tracks'.format(curr_track + 1, self.track_indices.size))
             progress.update(curr_track)
         progress.complete(status='Partition {} has been processed'.format(self.key))
 
-        # Convert processed data to numpy ndarray
+        # Convert processed data to Numpy Array
         self.segment_data = np.array(self.segment_data).astype(np.float32)
         self.segment_indices = np.array(self.segment_indices)
 
-        # Were the required number of files read
+        # Were the required number of files read?
         total_tracks_read = np.unique(self.segment_indices).size
         if total_tracks_read < len(self.track_indices):
             print('WARNING: Only {0} of {1} files were read'.format(total_tracks_read, len(self.track_indices)))
 
-        # print("All tracks processed in partition", self.key)
-
     def load_data(self):
-        """Load the processed partition data"""
+        """Loads the processed partition data from disc"""
         self.segment_data = read_h5_data(self.key + '/segment_data', self.dataset_path)
         self.segment_indices = read_h5_data(self.key + '/segment_indices', self.dataset_path, dtype=np.int32)
         self.dirty = False
 
     def save_data(self, force_save=False):
-        """Save the processed partition data. Proceeds to save only if dirty flag is set. Can optionally be forced"""
+        """Saves the processed partition data to disc.
+        Proceeds to save only if dirty flag is set. Can optionally be forced
+        """
         if not force_save and not self.dirty:
             return
         assert self.segment_data is not None
@@ -739,10 +517,11 @@ class Partition:
         write_h5_data(self.key + '/segment_indices', self.segment_indices, self.dataset_path, dtype=np.int32)
         self.cached = True
         write_h5_attrib(self.key + '_cached', self.cached, self.dataset_path)
+        # Save complete. Unmark partition for saving
         self.dirty = False
 
     def save(self):
-        """Saves all attributes of this class along with the processed data"""
+        """Saves all attributes of the partition along with the processed data"""
         write_h5_data(self.key + '/track_indices', self.track_indices, self.dataset_path, dtype=np.int32)
         write_h5_attrib(self.key + '_cached', self.cached, self.dataset_path)
         write_h5_attrib(self.key + '_scaled', self.scaled, self.dataset_path)
@@ -750,7 +529,7 @@ class Partition:
 
     @staticmethod
     def load(key, dataset_path):
-        """Load a partition (metadata only) from a h5 file using its unique key"""
+        """Loads a partition (metadata only) from a h5 file using its unique key"""
         indices = read_h5_data(key + '/track_indices', dataset_path, dtype=np.int32)
         part = Partition(key, indices, dataset_path)
         part.cached = read_h5_attrib(key + '_cached', dataset_path)
@@ -758,21 +537,34 @@ class Partition:
         return part
 
     def is_loaded(self):
+        """Checks if the partition data has been loaded from disc"""
         return self.segment_data is not None
 
     def flush_data(self):
-        """Save partition data and release from memory"""
+        """Save partition data and release free memory"""
         self.save_data()
         self.segment_data = None
         self.segment_indices = None
 
     def get_num_segments(self):
+        """Counts the no of samples in the current partition"""
         shape = read_h5_data_shape(self.key + '/segment_data', self.dataset_path)
         return 0 if shape is None else shape[0]
 
 
 def create_partitions(tracks, num_tracks, num_train_partitions, cv_split, test_split, dataset_path):
-    """Create partitions for train, test and cross-validation"""
+    """Create partitions for training, testing and cross-validation
+    Multiple training partitions can be created but only one for cv and test.
+    Arguments:
+        tracks: pandas dataframe with FMA tracks data
+        num_tracks: total no of tracks across all the partitions
+        num_train_partitions: total no of train partitions to distribute the training data across
+        cv_split: fraction of num_tracks to be added to the cv partition
+        test_split: fraction of num_tracks to be added to the test partition
+        dataset_path: Path to dataset file to save the partitions data in
+    """
+
+    # Sample tracks and shuffle
     indices = np.array(tracks.index)
     np.random.shuffle(indices)
     indices = indices[:num_tracks]
@@ -802,6 +594,7 @@ def create_partitions(tracks, num_tracks, num_train_partitions, cv_split, test_s
 
 
 def load_created_partitions(dataset_path):
+    """Loads a saved partition from dataset_path"""
     with h5py.File(dataset_path, 'r') as dataset:
         partition_keys = list(dataset.keys())
     parts = [Partition.load(key, dataset_path) for key in partition_keys]
@@ -819,7 +612,7 @@ def load_created_partitions(dataset_path):
 
 
 def get_partition_key(partition_type, partition_num=None):
-    """Generates unique key for a partition using its attributes"""
+    """Generates a unique key for a partition using its attributes"""
     key = 'partition'
     if partition_type in ['cv', 'test']:
         return '_'.join([key, partition_type])
@@ -831,6 +624,20 @@ def get_partition_key(partition_type, partition_num=None):
 
 
 class PartitionBatchGenerator:
+    """Generates batches across multple data partitions
+    Arguments:
+        partitions: single partition or list of partitions
+        batch_size: data samples per batch. If None, the size of the first partition is used as batch_size
+        mode: one of 'train', 'cv', 'test' or 'track'
+        post_process: function to transform generated batch data
+    Modes:
+        train: batches are created across all partitions sequentially, only one partition being loaded in memory
+        at a time
+        cv: same as 'train' but only one partiton is supplied
+        test: same as 'cv'
+        track: same as 'test' except that the partition is not shuffled, read from or written to disc. This is useful
+        for preserving the order of the data samples in the partition
+    """
 
     def __init__(self, partitions, batch_size, mode='train', post_process=None):
         assert mode in ['train', 'cv', 'test', 'track']
@@ -848,6 +655,7 @@ class PartitionBatchGenerator:
     def __iter__(self):
         for partition in self.partitions:
             if self.mode != 'track':
+                # Shuffle partition before generating batches
                 partition.load_data()
                 indices = np.arange(partition.segment_data.shape[0])
                 np.random.shuffle(indices)
@@ -855,23 +663,27 @@ class PartitionBatchGenerator:
                 partition.segment_indices[:] = partition.segment_indices[indices]
             curr_batch_start = 0
             while curr_batch_start < partition.segment_data.shape[0]:
+                # Yield batches from current partition
                 curr_batch_end = min(curr_batch_start + self.batch_size, partition.segment_data.shape[0])
                 curr_batch_segments = partition.segment_data[curr_batch_start: curr_batch_end]
                 curr_batch_segment_indices = partition.segment_indices[curr_batch_start: curr_batch_end]
                 curr_batch_start += self.batch_size
                 yield self.post_process(curr_batch_segments, curr_batch_segment_indices)
             if self.mode != 'track':
+                # Write changes to disc
                 partition.flush_data()
 
 
-# @unittest.skip
 class PartitionTests(unittest.TestCase):
+    """Tests partitions, batch generator and other utils"""
 
     def setUp(self):
+        # Temporary directory for testing
         self.root = 'temp'
         self.dataset_path = os.path.join(self.root, 'dataset')
 
     def tearDown(self):
+        # Temporary directory for testing
         shutil.rmtree(self.root, ignore_errors=True)
 
     def test_partition_key(self):
@@ -885,7 +697,7 @@ class PartitionTests(unittest.TestCase):
 
     def test_create_partitions(self):
         total_tracks = 200
-        tracks = pd.DataFrame(np.ones((total_tracks, 5)))
+        tracks = pd.DataFrame(np.ones((total_tracks, 5)))  # Dummy tracks data
         train_parts, cv_part, test_part = create_partitions(tracks, 100, 4, 0.1, 0.1, self.dataset_path)
         parts = train_parts + [cv_part, test_part]
         self.assertEqual(len(parts), 6)
@@ -906,9 +718,10 @@ class PartitionTests(unittest.TestCase):
 
     def test_all_partitions_meta_io(self):
         total_tracks = 200
-        tracks = pd.DataFrame(np.ones((total_tracks, 5)))
+        tracks = pd.DataFrame(np.ones((total_tracks, 5)))  # Dummy tracks data
         train_parts, cv_part, test_part = create_partitions(tracks, 100, 4, 0.1, 0.1, self.dataset_path)
         parts = train_parts + [cv_part, test_part]
+        # Save
         for part in parts:
             part.save()
         # Load
@@ -1018,13 +831,231 @@ class PartitionTests(unittest.TestCase):
                 break
 
 
-##
-# Exec
-##
+"""Partition Scaling"""
 
 
-def run():
-    """Executes CLI
+def scale_partition_with_standard_scaler(partition, mean, std):
+    """Scales a partition using Standard Normalization"""
+    if not partition.is_loaded():  # Skip partitions that are not loaded
+        raise Exception('Data for partition {} is not loaded'.format(partition.key))
+    if partition.segment_data.size == 0:  # Can't reshape empty arrays
+        return
+    data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
+    data -= mean
+    data /= std
+
+
+def fit_standard_scaler_on_partitions(partitions, dataset_path):
+    """Accumulates the norms across the partitions and then scales them using Standard Normalization"""
+
+    # Load or accumulate norms
+    norms = load_scaler_norms(dataset_path)
+    if norms is not None:
+        mean, std = norms
+    else:
+        print('Computing Norms')
+        count = 0
+        total_sum = None
+        total_square_sum = None
+        for partition in partitions:
+            # Don't use cv and test partitions for determining the norms
+            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
+                print('Ignoring partition:', partition.key)
+                continue
+
+            # Load partition
+            partition.load_data()
+            data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
+            # Update norms
+            count += partition.segment_data.shape[0]
+            if total_sum is None:
+                total_sum = np.zeros(data.shape[1])
+                total_square_sum = np.zeros(data.shape[1])
+            total_sum += data.sum(axis=0)
+            total_square_sum += np.square(data).sum(axis=0)
+            # Flush partition
+            partition.flush_data()
+        # Save final norms
+        mean = total_sum / count
+        std = np.sqrt(((total_square_sum - (2 * mean * total_sum)) / count) + np.square(mean))
+        norms = (mean, std)
+        save_scaler_norms(norms, dataset_path)
+
+    # Scale all partitions including cv and test
+    for partition in partitions:
+        if partition.scaled:  # Skip scaled partition
+            continue
+        print('Scaling Partition', partition.key)
+        # Load partition
+        partition.load_data()
+        # Scale partition
+        scale_partition_with_standard_scaler(partition, mean, std)
+        # Mark as scaled and for saving
+        partition.scaled = True
+        partition.dirty = True
+        # Flush changes
+        partition.save()
+        partition.flush_data()
+
+
+def scale_partition_with_minmax_scaler(partition, abs_min, abs_max):
+    """Sales a partition using Minmax Normalization"""
+    if not partition.is_loaded():
+        raise Exception('Data for partition {} is not loaded'.format(partition.key))
+    data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
+    data -= abs_min
+    data /= (abs_max - abs_min)
+    partition.segment_data = data.reshape(partition.segment_data.shape)
+
+
+def fit_minmax_scaler_on_partitions(partitions, dataset_path):
+    """Accumulates the norms across the partitions and then scales them using Minmax Normalization"""
+
+    # Load or accumulate norms
+    norms = load_scaler_norms(dataset_path)
+    if norms is not None:
+        abs_min, abs_max = norms
+    else:
+        print('Computing Norms')
+        abs_min = None
+        abs_max = None
+        for partition in partitions:
+            # Don't use cv and test partitions for determining the norms
+            if partition.key in [get_partition_key(part_type) for part_type in ['cv', 'test']]:
+                print('Ignoring partition:', partition.key)
+                continue
+            # Load partition
+            partition.load_data()
+            data = partition.segment_data.reshape(partition.segment_data.shape[0], -1)
+            # Update norms
+            if abs_min is None:
+                abs_min = data.min(axis=0)
+                abs_max = data.max(axis=0)
+            else:
+                abs_min = np.minimum(abs_min, data.min(axis=0))
+                abs_max = np.maximum(abs_max, data.max(axis=0))
+            # Flush partition
+            partition.flush_data()
+        # Save final norms
+        norms = (abs_min, abs_max)
+        save_scaler_norms(norms, dataset_path)
+
+    # Scale all partitions including cv and test
+    for partition in partitions:
+        if partition.scaled:  # Skip scaled partition
+            continue
+        print('Scaling Partition', partition.key)
+        # Load partition
+        partition.load_data()
+        # Scale partition
+        scale_partition_with_minmax_scaler(partition, abs_min, abs_max)
+        # Mark as scaled and for saving
+        partition.dirty = True
+        partition.scaled = True
+        # Flush changes
+        partition.save()
+        partition.flush_data()
+
+
+def fit_scaler_on_partitions(partitions, dataset_path, scaler='standard'):
+    """Delegates scaling across partitions to an appropriate scaler using 'scaler'"""
+    if scaler == 'standard':
+        fit_standard_scaler_on_partitions(partitions, dataset_path)
+    elif scaler == 'minmax':
+        fit_minmax_scaler_on_partitions(partitions, dataset_path)
+    else:
+        raise Exception('Invalid scaler: {}'.format(scaler))
+
+
+def save_scaler_norms(norms, dataset_path):
+    """Saves the scaler norms to the H5 file specified"""
+    norms_proc = []
+    for norm in norms:
+        norms_proc.append(norm.tolist())
+    write_h5_attrib('scaler_norms', norms_proc, dataset_path, serialize=True)
+
+
+def load_scaler_norms(dataset_path):
+    """Loads the scaler norms from the H5 file specified. None is returned if not found"""
+    norms_proc = read_h5_attrib('scaler_norms', dataset_path, deserialize=True)
+    if norms_proc is None:
+        return None
+    norms = []
+    for norm in norms_proc:
+        norms.append(np.array(norm))
+    return norms
+
+
+class PartitionScalerTests(unittest.TestCase):
+    """Tests partition scalers and related utilities"""
+
+    def setUp(self):
+        # Test Directory
+        self.root = 'test'
+        self.dataset_path = os.path.join(self.root, 'dataset')
+
+    def tearDown(self):
+        # Test Directory
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_standard_scaler(self):
+        # Dummy data scaled without using the scaler
+        test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
+        test_data_scaled = test_data - test_data[:8, :].mean(axis=0)
+        test_data_scaled /= test_data[:8, :].std(axis=0)
+
+        # Scale with scaler
+        pkeys = ['p1', 'p2', get_partition_key('cv')]
+        pdata = [test_data[:5, :], test_data[5:8, :], test_data[8:, :]]
+        partitions = []
+        for i in range(3):
+            partition = Partition(pkeys[i], np.array([]), self.dataset_path)
+            partition.segment_data = pdata[i]
+            partition.segment_indices = []
+            partition.dirty = True
+            partition.save()
+            partitions.append(partition)
+        fit_standard_scaler_on_partitions(partitions, self.dataset_path)
+        scaled_data = []
+        for i in range(3):
+            partitions[i].load_data()
+            scaled_data.extend(partitions[i].segment_data.tolist())
+        scaled_data = np.array(scaled_data).astype(np.float32)
+
+        self.assertEqual(np.rint(scaled_data - test_data_scaled).sum(), 0)
+
+    def test_minmax_scaler(self):
+        # Dummy data scaled without using the scaler
+        test_data = np.random.randint(100, size=(10, 10)).astype(np.float32)
+        test_data_scaled = test_data - test_data[:7, :].min(axis=0)
+        test_data_scaled /= (test_data[:7, :].max(axis=0) - test_data[:7, :].min(axis=0))
+
+        # Scale with scaler
+        pkeys = ['p1', 'p2', get_partition_key('test')]
+        pdata = [test_data[:5, :], test_data[5:7, :], test_data[7:, :]]
+        partitions = []
+        for i in range(3):
+            partition = Partition(pkeys[i], np.array([]), self.dataset_path)
+            partition.segment_data = pdata[i]
+            partition.segment_indices = []
+            partition.dirty = True
+            partition.save()
+            partitions.append(partition)
+        fit_minmax_scaler_on_partitions(partitions, self.dataset_path)
+        scaled_data = []
+        for i in range(3):
+            partitions[i].load_data()
+            scaled_data.extend(partitions[i].segment_data.tolist())
+        scaled_data = np.array(scaled_data).astype(np.float32)
+
+        self.assertTrue(np.array_equal(scaled_data, test_data_scaled))
+
+
+"""Data Processor  CLI"""
+
+
+def cli():
+    """Runs CLI
         Example: "python data_processor.py -m mfcc -c config.json -o" (Create partitions in MFCC mode)
         Example: "python data_processor.py -t" (Run Unit Tests)
     """
@@ -1039,7 +1070,6 @@ def run():
 
     # Parse arguments
     args = parser.parse_args()
-    # mode, scaler, config_path, override, tests = args.mode, args.scaler, args.config_path, args.override, args.tests
     mode, config_path, override, tests, email = args.mode, args.config_path, args.override, args.tests, args.email
     print('Arguments: Mode:{0}\tOverride:{1}\tTest:{2}\tEmail:{3}\tConfig Path:{4}'
           .format(mode, override, tests, email, config_path))
@@ -1051,11 +1081,12 @@ def run():
         unittest.TextTestRunner().run(suite)
         return
 
-    try:
+    try:  # Exception block for email notifications
+
         # Load pre-processing specific default config and override with json config
         config = get_config_cls(mode)() if config_path is None else get_config_cls(mode).load_from_file(config_path)
 
-        # Create or Load dataset file
+        # Create or load dataset file
         dataset_exists = os.path.isfile(config.get_dataset_path())
         print('Dataset already exists?', dataset_exists)
         if dataset_exists and not override:
@@ -1063,7 +1094,6 @@ def run():
             config.update(read_h5_attrib('config', config.get_dataset_path(), deserialize=True))
             print('Read Mode:', mode)
             print('Read Config:', config.get_dict())
-            # print('Read Scaler:', scaler)
         else:
             if dataset_exists:
                 print('Deleted existing dataset file')
@@ -1081,7 +1111,7 @@ def run():
             parts.append(test_part)
         if len(parts) == 0:
             print('Creating new partitions')
-            tracks = get_fma_meta(config.fma_meta_dir, config.fma_type)
+            tracks = commons.get_fma_meta(config.fma_meta_dir, config.fma_type)
             train_parts, cv_part, test_part = create_partitions(tracks, config.num_tracks, config.num_train_partitions,
                                                                 config.cv_split, config.test_split,
                                                                 config.get_dataset_path())
@@ -1093,6 +1123,7 @@ def run():
         print('Processing partitions data')
         for part in parts:
             def _save_on_exit():
+                """Saves the processed changes of the current partition before the program exits"""
                 print("Saving unsaved changes in Partition: {0} before exiting".format(part.key))
                 part.save()
                 print('Save complete')
@@ -1110,20 +1141,21 @@ def run():
         fit_scaler_on_partitions(parts, config.get_dataset_path(), config.scaler)
         print('Done')
 
+        # Send success email
         if email:
             emailer.sendmail(
                 'Data Processing Complete: {}'.format(config.name),
                 str(config.get_dict())
             )
     except:
+        # Send failure email
         if email:
             emailer.sendmail(
                 'Data Processing Failed',
                 'Config Path: {}\n\nError: {}'.format(config_path, traceback.format_exc())
             )
-        traceback.print_exc()
-        sys.exit(1)
+        raise
 
 
 if __name__ == '__main__':
-    run()
+    cli()

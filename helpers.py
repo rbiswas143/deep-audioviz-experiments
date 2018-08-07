@@ -1,4 +1,6 @@
-import utils
+"""Helper utils"""
+
+import commons
 import train
 import models
 
@@ -9,6 +11,7 @@ import json
 
 
 def show_plot(train_config_file, opt=1):
+    """Plot learning curve for a training process"""
     training_config = train.TrainingConfig.load_from_file(train_config_file)
 
     # Model initialization
@@ -20,15 +23,17 @@ def show_plot(train_config_file, opt=1):
         return
 
     if opt == 1:
-        utils.plot_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, close=True)
+        commons.plot_learning_curve(checkpoint.training_losses, checkpoint.cv_losses, close=True)
     elif opt == 2:
-        utils.plot_learning_curve(checkpoint.cv_accuracies, checkpoint.model_specific['polled_accuracies'], close=True)
+        commons.plot_learning_curve(checkpoint.cv_accuracies, checkpoint.model_specific['polled_accuracies'],
+                                    close=True)
     else:
         return
     time.sleep(60)
 
 
 def hp_grid_vgg16():
+    """Generate random hyper parameters for Classifier"""
     size = 10
     lrs = 10 ** np.random.uniform(-5, 0, size).astype(np.float32)
     moms = np.random.choice([0.9, 0.9, 0.98], size)
@@ -72,6 +77,7 @@ def hp_grid_vgg16():
 
 
 def hp_grid_conv_ae():
+    """Generate random hyper parameters for Autoencoder"""
     needed = 8
     size = 500
 
@@ -128,7 +134,7 @@ def hp_grid_conv_ae():
             print('Error:', ex)
             continue
 
-        num_params = utils.get_trainable_params(model.model)
+        num_params = commons.get_trainable_params(model.model)
         if not param_range[0] <= num_params <= param_range[1]:
             print('Params not in range', num_params, 'less' if param_range[0] > num_params else 'more')
             continue
