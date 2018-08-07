@@ -1,3 +1,4 @@
+"""Build and train a model"""
 import data_processor as dp
 import models
 import emailer
