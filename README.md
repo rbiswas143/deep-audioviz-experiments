@@ -29,9 +29,9 @@ which are relatively small in size.
 
 ## Audio Visualizations
 
-![VIZ-BAR](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizbar1.png)
+![VIZ-BAR](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/random2.png)
 ![VIZ-REAL-1](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal1.png)
-![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/random2.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/vizreal3.png)
 
 ## Code Setup Notes
 
