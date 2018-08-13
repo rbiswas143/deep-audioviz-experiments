@@ -31,7 +31,7 @@ which are relatively small in size.
 
 ![VIZ-BAR](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizbar1.png)
 ![VIZ-REAL-1](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal1.png)
-![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal3.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/random2.png)
 
 ## Code Setup Notes
 
