@@ -7,8 +7,9 @@ import train
 import models
 import mapping_utils
 import commons
+import fma_utils
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
@@ -49,27 +50,33 @@ def start_server(server_config):
             request_config.classifier_layer = request.form['classifier_layer']
         print('Request Config: {}'.format(request_config.get_dict()))
 
-        # Save uploaded file
+        # Configs
+        train_config = train.TrainingConfig.load_from_file(request_config.train_config_path)
+        dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
+        dataset_mode = dp.read_h5_attrib('mode', dataset_config.get_dataset_path())
+
+        # Save uploaded file or get FMA track path
+        track_type = 'upload'
         if 'track' not in request.files:
-            raise Exception('Audio file is not available in the request')
-        track = request.files['track']
-        if track.filename == '':
-            raise Exception('No selected audio file')
-        server_config = app.config['server_config']
-        if not (track and '.' in track.filename and track.filename
-                .rsplit('.', 1)[1].lower() in server_config.allowed_extensions):
-            raise Exception('Invalid file')
-        filename = secure_filename(track.filename)
-        os.makedirs(server_config.upload_dir, exist_ok=True)
-        track_path = os.path.join(server_config.upload_dir, filename)
-        track.save(track_path)
+            if 'track' in request.form:
+                track_path = fma_utils.get_audio_path('datasets/fma/fma_small', int(request.form['track']))
+                track_type = 'fma'
+            else:
+                raise Exception('Audio file is not available in the request')
+        else:
+            track = request.files['track']
+            if track.filename == '':
+                raise Exception('No selected audio file')
+            server_config = app.config['server_config']
+            if not (track and '.' in track.filename and track.filename
+                    .rsplit('.', 1)[1].lower() in server_config.allowed_extensions):
+                raise Exception('Invalid file')
+            filename = secure_filename(track.filename)
+            os.makedirs(server_config.upload_dir, exist_ok=True)
+            track_path = os.path.join(server_config.upload_dir, filename)
+            track.save(track_path)
 
         try:
-            # Configs
-            train_config = train.TrainingConfig.load_from_file(request_config.train_config_path)
-            dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
-            dataset_mode = dp.read_h5_attrib('mode', dataset_config.get_dataset_path())
-
             # Model
             cuda = torch.cuda.is_available()
             model = train_config.get_by_model_key(cuda)
@@ -84,7 +91,8 @@ def start_server(server_config):
             enc = mapping_utils.map_and_scale(enc, request_config, train_config)
         finally:
             # Delete uploaded track
-            os.unlink(track_path)
+            if track_type == 'upload':
+                os.unlink(track_path)
 
         # Compile and send
         return jsonify({
@@ -94,9 +102,24 @@ def start_server(server_config):
             'encoding': enc.tolist()
         })
 
+    @app.route('/fetchtracks', methods=['GET'])
+    def fetch_tracks():
+        tracks = commons.get_fma_meta("datasets/fma/fma_metadata", 'small')
+        return jsonify(list(zip(*[
+            tracks.index.tolist(),
+            tracks['track', 'title'].tolist(),
+            tracks['artist', 'name'].tolist(),
+            tracks['track', 'genre_top'].tolist()
+        ])))
+
+    @app.route('/downloadtrack/<path:track_id>', methods=['GET'])
+    def download_fma_track(track_id):
+        track_path = fma_utils.get_audio_path('datasets/fma/fma_small', int(track_id))
+        return send_file(track_path)
+
     # Start server
     print('Starting DeepViz server at Port:{}'.format(server_config.port))
-    app.run(None, server_config.port, debug=server_config.debug)
+    app.run('0.0.0.0', server_config.port, debug=server_config.debug)
 
 
 if __name__ == '__main__':

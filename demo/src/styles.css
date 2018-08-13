@@ -1,0 +1,508 @@
+/****************** Overall ******************/
+
+html, body {
+    width: 100%;
+    height: 100%;
+    color: #6fc2c3;
+}
+
+/* Background */
+
+#main-box::after {
+    content: "";
+    background-image: url("../assets/bg_neural_2.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.7;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: -1;
+}
+
+/****************** Viz Box ******************/
+
+#viz-box {
+    background-color: rgba(0, 0, 0, 0.4);
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 30%;
+    position: absolute;
+    overflow: auto;
+}
+
+#message-box {
+    left: 10%;
+    right: 10%;
+    top: 30%;
+    font-size: 200%;
+    color: #ffce33;
+    text-align: center;
+    position: absolute;
+}
+
+/****************** Viz Control ******************/
+
+#viz-control {
+    height: 20px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    background-color: black;
+    display: none;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    #viz-control {
+        background-color: white;
+        color: black;
+    }
+}
+
+@-moz-document url-prefix() {
+    #viz-control {
+        background-color: black;
+        color: white;
+    }
+}
+
+#viz-control-play, #viz-control-pause {
+    height: 100%;
+    left: 0;
+    width: 2%;
+    position: absolute;
+}
+
+#viz-control-pause {
+    display: none;
+}
+
+#viz-control-stop {
+    height: 100%;
+    left: 2%;
+    width: 2%;
+    position: absolute;
+}
+
+#viz-control-trackbar {
+    height: 100%;
+    left: 7%;
+    width: 88%;
+    position: absolute;
+}
+
+#viz-control-fullscreen {
+    height: 100%;
+    right: 0;
+    width: 2%;
+    position: absolute;
+}
+
+#viz-control button i {
+    position: absolute;
+    left: 0;
+    top: 10%;
+    width: 90%;
+    height: 90%;
+    font-size: 90%;
+}
+
+#viz-control-time-elapsed, #viz-control-time-left {
+    height: 100%;
+    position: absolute;
+    width: 3%;
+}
+
+#viz-control-time-elapsed {
+    left: 4%;
+}
+
+#viz-control-time-left {
+    right: 2%;
+}
+
+#viz-control-time-elapsed div, #viz-control-time-left div {
+    position: absolute;
+    top: 25%;
+    left: 12%;
+    font-size: 50%;
+}
+
+/****************** Range ******************/
+
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    /*margin: 2px 0;*/
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 12px;
+    cursor: pointer;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    background: #3071a9;
+    border-radius: 1.3px;
+    border: 0.2px solid #010101;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    border: 1px solid #000000;
+    height: 12px;
+    width: 12px;
+    border-radius: 6px;
+    background: #84dfe0;
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: 0px;
+}
+
+input[type=range]:focus::-webkit-slider-runnable-track {
+    background: #367ebd;
+}
+
+input[type=range]::-moz-range-track {
+    width: 100%;
+    height: 8.4px;
+    cursor: pointer;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    background: #3071a9;
+    border-radius: 1.3px;
+    border: 0.2px solid #010101;
+}
+
+input[type=range]::-moz-range-thumb {
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    border: 1px solid #000000;
+    height: 12px;
+    width: 12px;
+    border-radius: 6px;
+    background: #84dfe0;
+    cursor: pointer;
+}
+
+input[type=range]::-ms-track {
+    width: 100%;
+    height: 8.4px;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+}
+
+input[type=range]::-ms-fill-lower {
+    background: #2a6495;
+    border: 0.2px solid #010101;
+    border-radius: 2.6px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+input[type=range]::-ms-fill-upper {
+    background: #3071a9;
+    border: 0.2px solid #010101;
+    border-radius: 2.6px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+input[type=range]::-ms-thumb {
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    border: 1px solid #000000;
+    height: 20px;
+    width: 8px;
+    border-radius: 3px;
+    background: #ffffff;
+    cursor: pointer;
+    height: 8.4px;
+}
+
+/****************** Menu Box ******************/
+
+#menu-box {
+    background-color: rgba(0, 0, 0, 0.7);
+    top: 0;
+    left: 70%;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    font-size: 70%;
+    overflow: auto;
+    border: 2px solid rgba(25, 25, 25, 0.8);
+}
+
+#menu-box:hover {
+    border: 2px solid rgba(160, 160, 160, 0.8);
+}
+
+#menu-box h6 {
+    color: rgb(0, 251, 255);
+    padding: 5px;
+    font-size: 100%;
+    font-weight: bold;
+    margin: auto;
+}
+
+#menu-box img {
+    width: 90%;
+    height: 90%;
+    margin-bottom: 15px;
+}
+
+.viz-form {
+    border-radius: 10px;
+    margin: auto;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    background-color: rgba(256, 256, 256, 0.1);
+
+}
+
+:focus {
+    box-shadow: none !important;
+}
+
+/* Inputs */
+
+.viz-label {
+    padding: 10px;
+}
+
+#menu-box select {
+    font-size: 100% !important;
+    font-weight: bold !important;
+    height: 50% !important;
+    opacity: 0.6;
+    border: 1px solid #84dfe0 !important;
+    background-color: rgba(6, 23, 56, 0.4) !important;
+    color: #f8b1ff !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+#menu-box select:hover, #menu-box select:focus {
+    border: 2px solid #84dfe0 !important;
+}
+
+#menu-box select option {
+    background-color: rgba(0, 13, 30, 0.8);
+    color: #ad7aaf;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+#menu-box input {
+    opacity: 0.5;
+}
+
+#menu-box input:hover, #menu-box input:focus {
+    opacity: 1;
+}
+
+/* Buttons */
+
+.viz-button-small {
+    padding: 5px;
+    font-size: 70% !important;
+    font-weight: bold !important;
+    margin: 5px;
+    opacity: 0.5;
+    color: #fdcbff !important;
+    background-color: #23083e;
+}
+
+.viz-button-small:hover, .viz-button-small:focus {
+    opacity: 1;
+}
+
+.viz-help-btn {
+    border-radius: 50%;
+    opacity: 1;
+    color: #34be71;
+    /*font-size: 70%;*/
+    padding: 2px;
+    border: 2px solid transparent;
+    background-color: transparent;
+    line-height: 30%;
+    /*border: 0px;*/
+}
+
+.viz-help-btn:hover, .viz-help-btn:focus {
+    color: #16754d;
+    background-color: transparent;
+    border: 2px solid #16754d;
+    outline: none;
+}
+
+.viz-help-btn i {
+    margin: auto !important;
+}
+
+#viz-params-reorder-btn {
+    background-color: #3c096d;
+}
+
+#go-btn {
+    background-color: rgba(200, 200, 0, 0.6);
+    color: #3c096d;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    padding: 10px;
+    font-weight: bold !important;
+    margin: 5px;
+    opacity: 0.6;
+}
+
+#go-btn:hover, #go-btn:focus {
+    border: 2px solid #84dfe0;
+    background-color: rgba(200, 200, 0, 1);
+    color: #140728;
+}
+
+#go-btn:active {
+    background-color: rgba(180, 0, 0, 1);
+}
+
+/* Viz Params Reordering */
+
+#viz-params-ordering-modal ol {
+    list-style: none;
+    counter-reset: item;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#viz-params-ordering-modal ol li {
+    color: #f8b1ff;
+    counter-increment: item;
+    margin: 5px auto;
+    text-align: center;
+    font-size: 120%;
+    width: 70%;
+    border: 2px solid transparent;
+    outline: 1px solid #84dfe0;
+    background-color: rgba(6, 23, 56, 0.4);
+}
+
+#viz-params-ordering-modal ol li:hover {
+    border: 2px solid #84dfe0;
+}
+
+#viz-params-ordering-modal ol .ui-sortable-helper {
+    border: 2px solid #84dfe0 !important;
+    background-color: rgba(99, 162, 211, 0.4) !important;
+}
+
+#viz-params-ordering-modal ol li:before {
+    margin: 5px;
+    content: "Feature " counter(item) " -> ";
+    border-radius: 10%;
+    color: #84dfe0;
+    font-weight: bold;
+}
+
+/****************** Modals ******************/
+
+.modal {
+    font-size: 80%;
+}
+
+.modal .modal-content {
+    right: 30%;
+    width: 150%;
+    background-color: rgba(17, 16, 29, 0.88);
+    color: #00fbff;
+    border-radius: 5%;
+    border: 1px solid #1b7475;
+}
+
+.modal .modal-content h6 {
+    color: white;
+    font-size: 110%;
+    margin-left: -10px;
+    text-decoration: underline;
+}
+
+.modal .modal-content b {
+    color: white;
+    font-weight: normal;
+}
+
+.modal .modal-header {
+    color: white;
+}
+
+.modal .modal-body {
+    max-height: 400px;
+    overflow: auto;
+}
+
+#fma-track-select-modal .modal-body {
+    overflow: visible;
+}
+
+.modal .fa-window-close {
+    color: #80640f;
+}
+
+.modal .modal-footer {
+    display: block;
+}
+
+.modal .modal-footer button {
+    background-color: #80640f;
+    padding: 5px;
+    opacity: 0.6;
+}
+
+.modal .modal-footer button:hover, .modal .modal-footer button:active {
+    opacity: 1;
+}
+
+.modal .modal-footer button:active {
+    background-color: #4a380a;
+}
+
+#viz-params-ordering-modal .modal-footer button, #fma-loader-btn {
+    background-color: #34be71;
+}
+
+#viz-params-ordering-modal .modal-footer button:active, #fma-loader-btn:active {
+    background-color: #216c36;
+}
+
+/****************** Selectize ******************/
+
+.selectize-input {
+    font-size: 100% !important;
+    font-weight: bold !important;
+    height: 50% !important;
+    margin-top: 10px;
+    opacity: 0.6;
+    border: 1px solid #84dfe0 !important;
+    background-color: rgba(6, 23, 56, 0.4) !important;
+    width: 300px !important;
+}
+
+.selectize-input, .selectize-input input {
+    color: #f8b1ff !important;
+}
+
+.selectize-input:hover, .selectize-input:focus {
+    border: 2px solid #84dfe0 !important;
+}
+
+.selectize-dropdown {
+    background-color: rgba(0, 13, 30, 0.8);
+    color: #ad7aaf;
+    width: 300px !important;
+    padding: 0px;
+}
