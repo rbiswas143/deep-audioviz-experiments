@@ -10,7 +10,7 @@ export default class VizReal extends BaseViz {
       camFov: 75,
       camNear: 0.1,
       camFar: 1000,
-      camZ: 300,
+      camRad: 300,
       orbitalControls: true,
       skyRad: 500,
       sphRadMax: 40,

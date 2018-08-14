@@ -20,7 +20,7 @@ export default class BaseViz {
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({antialias: true});
-    // this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
 
     // Viz specific init
     this.init();
