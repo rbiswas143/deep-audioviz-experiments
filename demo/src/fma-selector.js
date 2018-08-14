@@ -24,6 +24,7 @@ export default class FMATrackSelector {
     this.$fmaArtistSelect = $('#fma-artist-select');
     this.$fmaTrackSelect = $('#fma-track-select');
     this.fmaLoaderButton = $('#fma-loader-btn');
+    this.$serverStatusButton = $('#server-status');
 
 
     // Fetch FMA metadata from backend
@@ -35,6 +36,10 @@ export default class FMATrackSelector {
   }
 
   onMetadataLoadSuccess(tracksData) {
+    // Set server state
+    this.$serverStatusButton.find('i').addClass('green');
+    this.$serverStatusButton.attr('title', 'Sever is UP!   \\[]/');
+
     // Convert metadata to array of objects as needed by selectize
     this.fmaTracks = [];
     tracksData.forEach(data => {

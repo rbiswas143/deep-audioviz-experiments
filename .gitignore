@@ -5,6 +5,7 @@ __pycache__
 *cache*
 .ipynb*
 private/*
+logs/*
 datasets/fma
 datasets/mnist
 *.h5

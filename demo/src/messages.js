@@ -12,19 +12,12 @@ export default class VizBoxMessages {
   constructor() {
     this.messageContainer = document.getElementById("message-box");
     this.init_message = this.messageContainer.innerHTML;
-    this.cache = {};
-  }
-
-  reset() {
-    this.messageContainer = document.getElementById("message-box");
-    this.setInit();
   }
 
   updateMessage(show, message) {
-    if (show && this.cache.hasOwnProperty('messageBoxDisplay')) {
-      this.messageContainer.style.display = this.cache.messageBoxDisplay;
+    if (show) {
+      this.messageContainer.style.display = '';
     } else if (!show) {
-      this.cache.messageBoxDisplay = this.messageContainer.style.display;
       this.messageContainer.style.display = 'none';
     }
     if (message) {

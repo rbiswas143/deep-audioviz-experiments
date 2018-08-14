@@ -13,7 +13,21 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
+import json
+import logging
+from logging.handlers import RotatingFileHandler
 import torch
+from geolite2 import geolite2
+
+# Logging
+logfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'logs', 'deepviz-requests.log')
+os.makedirs(os.path.dirname(logfile), exist_ok=True)
+logger = logging.getLogger('deepviz')
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler(logfile, maxBytes=1024 * 1024, backupCount=100)  # 1MB x 100 files
+formatter = logging.Formatter('%(asctime)s :: %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 class ServerConfig(commons.BaseConfig):
@@ -36,6 +50,10 @@ def start_server(server_config):
     app.secret_key = server_config.secret
     app.config['server_config'] = server_config
 
+    # Geolite
+    geo_reader = geolite2.reader()
+    request_count = 0
+
     @app.route('/fetchmap', methods=['POST'])
     def fetch_map():
         """"""
@@ -48,7 +66,7 @@ def start_server(server_config):
         request_config.feature_scaling = request.form['feature_scaling']
         if 'classifier_layer' in request.form:
             request_config.classifier_layer = request.form['classifier_layer']
-        print('Request Config: {}'.format(request_config.get_dict()))
+        logger.info('Request Config: %s', json.dumps(request_config.get_dict(), indent=2, sort_keys=True))
 
         # Configs
         train_config = train.TrainingConfig.load_from_file(request_config.train_config_path)
@@ -62,6 +80,7 @@ def start_server(server_config):
                 track_path = fma_utils.get_audio_path('datasets/fma/fma_small', int(request.form['track']))
                 track_type = 'fma'
             else:
+                logger.error('Audio file is not available in the request')
                 raise Exception('Audio file is not available in the request')
         else:
             track = request.files['track']
@@ -75,6 +94,7 @@ def start_server(server_config):
             os.makedirs(server_config.upload_dir, exist_ok=True)
             track_path = os.path.join(server_config.upload_dir, filename)
             track.save(track_path)
+        logger.info('Track type : %s\tTrack path : %s', track_type, track_path)
 
         try:
             # Model
@@ -117,8 +137,35 @@ def start_server(server_config):
         track_path = fma_utils.get_audio_path('datasets/fma/fma_small', int(track_id))
         return send_file(track_path)
 
+    @app.after_request
+    def log_request(resp):
+        request_data = {
+            'endpoint': request.endpoint,
+            'host_url': request.host_url,
+            'referrer': request.referrer,
+            'method': request.method,
+            'remote_addr': request.remote_addr,
+            'user_agent': str(request.user_agent)
+        }
+        logger.info('Request Data: %s', json.dumps(request_data, indent=2, sort_keys=True))
+
+        try:
+            ip = request.remote_addr
+            geo_data = geo_reader.get(ip)
+            logger.info('Geo Data: %s', json.dumps(geo_data, indent=2, sort_keys=True))
+        except:
+            logger.exception('Failed to log geo data')
+
+        logger.info('Response status: %s', resp.status)
+
+        nonlocal request_count
+        request_count += 1
+        print('Requests Count: {}'.format(request_count))
+
+        return resp
+
     # Start server
-    print('Starting DeepViz server at Port:{}'.format(server_config.port))
+    logger.info('Starting DeepViz server at Port:{}'.format(server_config.port))
     app.run('0.0.0.0', server_config.port, debug=server_config.debug)
 
 

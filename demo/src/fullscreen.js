@@ -45,19 +45,19 @@ export const changeSuccessCallback = function (callback) {
   });
 };
 
+export const toggle = function (element) {
+  if (activated()) {
+    cancel();
+  } else {
+    request(element);
+  }
+};
+
 export const bindKey = function (opts) {
   opts = opts || {};
   var charCode = opts.charCode || 'f'.charCodeAt(0);
   var dblclick = opts.dblclick !== undefined ? opts.dblclick : false;
   var element = opts.element;
-
-  var toggle = function () {
-    if (activated()) {
-      cancel();
-    } else {
-      request(element);
-    }
-  };
 
   // callback to handle keypress
   var __bind = function (fn, me) {
@@ -69,19 +69,19 @@ export const bindKey = function (opts) {
     // return now if the KeyPress isnt for the proper charCode
     if (event.which !== charCode) return;
     // toggle fullscreen
-    toggle();
+    toggle(element);
   }, this);
 
   // listen to keypress
   // NOTE: for firefox it seems mandatory to listen to document directly
   document.addEventListener('keypress', onKeyPress, false);
   // listen to dblclick
-  dblclick && (element || document).addEventListener('dblclick', toggle, false);
+  dblclick && (element || document).addEventListener('dblclick', () => toggle(element), false);
 
   return {
     unbind: function () {
       document.removeEventListener('keypress', onKeyPress, false);
-      dblclick && (element || document).removeEventListener('dblclick', toggle, false);
+      dblclick && (element || document).removeEventListener('dblclick', () => toggle(element), false);
     }
   };
 };

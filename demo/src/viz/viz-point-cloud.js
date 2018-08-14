@@ -13,11 +13,13 @@ import leaf2 from "../../assets/leaf2_icon.png";
 import leaf3 from "../../assets/leaf3_icon.png";
 
 export default class VizPointCloud extends BaseViz {
-  constructor(container) {
-    super(container);
-
+  init() {
     this.vizParams = {
-      camRad: 1000,
+      camFov: 75,
+      camNear: 0.1,
+      camFar: 3000,
+      camZ: 1000,
+      orbitalControls: true,
       cloudSize: 1000,
       numCloudGroups: 4,
       numCloudsPerGroup: 2,
@@ -41,34 +43,12 @@ export default class VizPointCloud extends BaseViz {
       fogHue: 0.5
     };
 
-    // Scene
-    this.scene = new THREE.Scene();
-
-    // Camera
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      container.offsetWidth / container.offsetHeight,
-      0.1,
-      3000
-    );
-    this.camera.position.z = this.vizParams.camRad;
-
-    // Renderer
-    this.renderer = new THREE.WebGLRenderer();
-    this.renderer.setSize(
-      this.container.offsetWidth,
-      this.container.offsetHeight
-    );
-
     // Fog
-    this.scene.fog = new THREE.FogExp2(0x000000, 10); //0.00007
+    this.scene.fog = new THREE.FogExp2(0x000000, 0);
 
     // Point Clouds
     this.pointClouds = [];
     this.initPointCloud();
-
-    this.container.appendChild(this.renderer.domElement);
-    this.initOrbitControls();
   }
 
   initPointCloud() {

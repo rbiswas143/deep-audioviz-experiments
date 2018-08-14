@@ -5,11 +5,13 @@ import Sky from "./comps/sky";
 import BaseViz from "./base-viz";
 
 export default class VizReal extends BaseViz {
-  constructor(container) {
-    super(container);
-
+  init() {
     this.vizParams = {
-      camRad: 300,
+      camFov: 75,
+      camNear: 0.1,
+      camFar: 1000,
+      camZ: 300,
+      orbitalControls: true,
       skyRad: 500,
       sphRadMax: 40,
       sphPosMax: 300,
@@ -33,32 +35,11 @@ export default class VizReal extends BaseViz {
       camHeight: 0.5
     };
 
-    // Scene
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      container.offsetWidth / container.offsetHeight,
-      0.1,
-      1000
-    );
-
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true
-    });
-    this.renderer.setSize(
-      this.container.offsetWidth,
-      this.container.offsetHeight
-    );
-    if (this.vizParams.shadow) {
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    }
-    this.container.appendChild(this.renderer.domElement);
-
-    var ambient = new THREE.AmbientLight(0x999999);
+    // Lights
+    const ambient = new THREE.AmbientLight(0x999999);
     this.scene.add(ambient);
 
-    var light = new THREE.PointLight(0xffffff, 0.1);
+    const light = new THREE.PointLight(0xffffff, 0.1);
     light.position.set(0, 10, 0);
     if (this.vizParams.shadow) {
       light.castShadow = true;
@@ -74,9 +55,7 @@ export default class VizReal extends BaseViz {
       this.scene.add(comp);
     });
 
-    this.initOrbitControls();
-
-    // this.renderer.render(this.scene, this.camera);
+    // Cache
     this.cache = {};
   }
 
@@ -100,8 +79,8 @@ export default class VizReal extends BaseViz {
       this.cache.time = time;
       this.cache.camAngle = 0;
     }
-    var interval = time - this.cache.time;
-    var camAngle = (2 * Math.PI * this.animParams.camFreq * interval / this.vizParams.camFreqFactor) + this.cache.camAngle;
+    const interval = time - this.cache.time;
+    const camAngle = (2 * Math.PI * this.animParams.camFreq * interval / this.vizParams.camFreqFactor) + this.cache.camAngle;
     this.cache.time = time;
     this.cache.camAngle = camAngle;
     this.camera.position.x = this.vizParams.camRad * Math.sin(camAngle);
@@ -119,5 +98,6 @@ export default class VizReal extends BaseViz {
     this.comps.forEach(comp => {
       this.scene.remove(comp);
     });
+    super.destroy();
   }
 }

@@ -14,7 +14,6 @@ import VizParamsReordering from './reorder-params';
 import './styles.css';
 import logo from '../assets/logo.png';
 
-
 const enableDatGUI = false;
 
 class Main {
@@ -29,17 +28,11 @@ class Main {
     this.currTrack = null;
 
     // UI Elements
-    this.vizContainer = document.getElementById('viz-box');
-    this.menuContainer = document.getElementById('menu-box');
+    this.vizBox = document.getElementById('viz-box');
+    this.vizContainer = document.getElementById('viz-container');
+    this.menuBox = document.getElementById('menu-box');
     this.selectedTrackInfo = document.getElementById('selected-track-info');
     this.vizSelect = document.getElementById('viz-select');
-
-    // Cache
-    this.cache = {
-      vizContainerInnerHTML: this.vizContainer.innerHTML,
-      vizContainerRightDefault: '30%',
-      vizContainerOpacityDefault: '0.6'
-    };
 
     // Init
     this.initUI();
@@ -54,10 +47,11 @@ class Main {
   }
 
   initUI() {
-    //todo show ui on load
-
     // Load logo
     document.getElementById('logo').setAttribute('src', logo);
+
+    // Show UI
+    document.querySelector('body').style.visibility = 'visible';
   }
 
   initFullScreen() {
@@ -66,22 +60,26 @@ class Main {
     Fullscreen.bindKey({
       charCode: 'F'.charCodeAt(0),
       dblclick: true,
-      element: this.vizContainer,
+      element: this.vizBox,
     });
 
     // On fullscreen change event handling
     Fullscreen.changeSuccessCallback(() => {
       const activated = Fullscreen.activated();
       if (activated) {
-        this.vizContainer.style.right = 0;
-        this.cache.menuContainerDisplayDefault = this.menuContainer.style.display;
-        this.menuContainer.style.display = 'none';
+        this.vizBox.classList.add('viz-fullscreen');
+        this.menuBox.classList.add('viz-fullscreen');
       } else {
-        this.vizContainer.style.right = this.cache.vizContainerRightDefault;
-        this.menuContainer.style.display = this.cache.menuContainerDisplayDefault;
+        this.vizBox.classList.remove('viz-fullscreen');
+        this.menuBox.classList.remove('viz-fullscreen');
       }
       this.viz && this.viz.resize();
     });
+
+    // Track control
+    document.getElementById('viz-control-fullscreen').onclick = () => {
+      Fullscreen.toggle(this.vizBox);
+    }
   }
 
   initGoButton() {
@@ -137,19 +135,18 @@ class Main {
   }
 
   initTrackControl() {
-    // Play track and viz
-    const pauseButton = document.getElementById('pause-btn');
-    pauseButton.onclick = () => {
-      this.audioManager.pause();
+    this.audioManager.onPause = () => {
       this.viz && (this.viz.vizParams.paused = true);
     };
 
-    // Pause track and viz
-    const playButton = document.getElementById('play-btn');
-    playButton.onclick = () => {
-      this.audioManager.play();
+    this.audioManager.onPlay = () => {
       this.viz && (this.viz.vizParams.paused = false);
     };
+
+    this.audioManager.onStop = () => {
+
+    }
+
   }
 
   initPostProcessing() {
@@ -186,7 +183,7 @@ class Main {
     }
 
     // Set up Viz Box
-    this.vizContainer.style.opacity = 1;
+    this.vizBox.classList.add('viz-active');
 
     // Viz and Mapper
     this.viz = new vizMap[vizCode](this.vizContainer);
@@ -201,23 +198,23 @@ class Main {
       }
     }
 
-    // Start track, mapper an visualization
+    // Start track, mapper and visualization
     this.audioManager.loadTrack(this.currTrack.src, () => {
-      this.audioManager.play();
-      this.mapper.start(requestData, featuresData, this.audioManager);
       this.viz.start();
+      this.mapper.start(requestData, featuresData, this.audioManager);
+      this.audioManager.activate();
+      this.audioManager.play();
     });
   }
 
   destroy() {
     this.audioManager && this.audioManager.pause();
+    this.audioManager.deactivate();
+    this.vizBox.classList.remove('viz-active');
     this.viz && this.viz.destroy();
     this.viz = null;
     this.mapper && (this.mapper.active = false);
     this.mapper = null;
-    this.cache.vizContainerInnerHTML && (this.vizContainer.innerHTML = this.cache.vizContainerInnerHTML);
-    this.vizBoxMessages.reset();
-    this.vizContainer.style.opacity = this.cache.vizContainerOpacityDefault;
   }
 
 }

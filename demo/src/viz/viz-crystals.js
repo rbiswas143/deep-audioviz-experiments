@@ -5,11 +5,14 @@ import Crystals from "./comps/crystals";
 import Sky from "./comps/sky";
 
 export default class VizCrystals extends BaseViz {
-  constructor(container) {
-    super(container);
+  init() {
 
     this.vizParams = {
-      camRad: 500,
+      camFov: 75,
+      camNear: 0.1,
+      camFar: 3000,
+      camZ: 500,
+      orbitalControls: true,
       skyRad: 700,
       numCrystalsPerGroup: 10,
       numCrystalGroups: 6,
@@ -32,30 +35,8 @@ export default class VizCrystals extends BaseViz {
       sizeCrystal6: 0.2,
     };
 
-    // Scene
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      container.offsetWidth / container.offsetHeight,
-      0.1,
-      10000
-    );
-    this.camera.position.z = this.vizParams.camRad;
-
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true
-    });
-    this.renderer.setSize(
-      this.container.offsetWidth,
-      this.container.offsetHeight
-    );
-    if (this.vizParams.shadow) {
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    }
-    this.container.appendChild(this.renderer.domElement);
-
-    var ambient = new THREE.AmbientLight(0x999999);
+    // Lights
+    const ambient = new THREE.AmbientLight(0x999999);
     this.scene.add(ambient);
 
     // Components
@@ -66,11 +47,6 @@ export default class VizCrystals extends BaseViz {
     this.comps.forEach(comp => {
       this.scene.add(comp);
     });
-
-    this.initOrbitControls();
-
-    // this.renderer.render(this.scene, this.camera);
-    this.cache = {};
   }
 
   static getVisualParamsInfo() {
@@ -98,5 +74,6 @@ export default class VizCrystals extends BaseViz {
     this.comps.forEach(comp => {
       this.scene.remove(comp);
     });
+    super.destroy();
   }
 }

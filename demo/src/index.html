@@ -5,10 +5,13 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body>
+<body style="visibility: hidden">
 <div id="main-box">
     <div class="row">
         <div id="viz-box">
+            <div id="viz-container">
+
+            </div>
             <div id="message-box">
                 <h3>
                     Welcome to Deep AudioViz
@@ -47,12 +50,13 @@
                 <div id="viz-control-time-left">
                     <div>00:00</div>
                 </div>
-                <!--<input type="range" id="viz-control-trackbar" min="0" max="1" step="0.01" value="0.4">-->
-                <input type="range" min="0" max="1" step="0.001" value="0.5" id="viz-control-trackbar">
+                <input type="range" min="0" max="1" step="0.001" value="0.0" id="viz-control-trackbar">
             </div>
         </div>
+
         <div id="menu-box">
             <div class="container">
+
                 <div class="row">
                     <div class="col-lg-12">
                         <img id="logo">
@@ -60,6 +64,19 @@
                                 data-target="#primary-help"><i
                                 class="fa fa-2x fa-question-circle pull-right"></i></button>
                     </div>
+                </div>
+
+                <div class="row">
+                    <form id="server-status-form" class="form-inline col-lg-11 viz-form">
+                        <div class="form-group col-lg-6">
+                            <span>SERVER STATUS</span>
+                        </div>
+                        <div class="form-group col-lg-6">
+                            <button id="server-status" type="button" class="btn-sm" data-toggle="tooltip" title="Server is not reachable :(">
+                                <i class="fa fa-2x fa-circle"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <div class="row">
@@ -188,24 +205,6 @@
                             </button>
                         </div>
 
-                    </form>
-                </div>
-
-                <div class="row">
-                    <form class="form-inline col-lg-11 viz-form">
-                        <div class="form-group col-lg-6">
-                            <h6>Track Control</h6>
-                        </div>
-                        <div class="form-group col-lg-3">
-                            <button id="play-btn" type="button" class="btn col-lg-12 viz-button-small">
-                                Play
-                            </button>
-                        </div>
-                        <div class="form-group col-lg-3">
-                            <button id="pause-btn" type="button" class="btn col-lg-12 viz-button-small">
-                                Pause
-                            </button>
-                        </div>
                     </form>
                 </div>
 

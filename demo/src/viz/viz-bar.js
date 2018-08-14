@@ -2,9 +2,14 @@ import THREE from "../three";
 import BaseViz from "./base-viz";
 
 export default class VizBar extends BaseViz {
-  constructor(container) {
-    super(container);
+  init() {
+
     this.vizParams = {
+      camFov: 40,
+      camNear: 0.1,
+      camFar: 20000,
+      camY: 45,
+      orbitalControls: true,
       numBars: 10,
       maxBarSize: 50,
       paused: false,
@@ -22,37 +27,16 @@ export default class VizBar extends BaseViz {
       bar10: 0.5
     };
 
-    // Scene
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(
-      40,
-      container.offsetWidth / container.offsetHeight,
-      0.1,
-      20000
-    );
-    this.camera.position.set(0, 45, 0);
-
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true
-    });
-    this.renderer.setSize(
-      this.container.offsetWidth,
-      this.container.offsetHeight
-    );
+    // Renderer
     this.renderer.setClearColor(0x333F47, 1);
-    this.container.appendChild(this.renderer.domElement);
 
+    // Light
     const light = new THREE.PointLight(0xffffff);
     light.position.set(-100, 200, 100);
     this.scene.add(light);
 
     // Components
     this.createBars();
-
-    // Orbit Controls
-    this.initOrbitControls();
-
-    // this.renderer.render(this.scene, this.camera);
   }
 
   static getVisualParamsInfo() {
