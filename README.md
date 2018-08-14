@@ -61,20 +61,20 @@ configurable options in each. All models are defined in _models.py_
 hyper-tuning configurations and train a batch of models using the CLI provided by
 _hp_tune.py_
 
-### Analysis
+#### Analysis
 * Experiments on all the trained models and all feature mapping techniques are available in
 the Ipython Notebook, _analysis.ipynb_
 * During analysis, an analysis directory is created in the respective model directory where all
 the results are saved
 * The feature mapping utilities have also been defined in _mapping_utils.py_
 
-### PlayGround Server
+#### PlayGround Server
 * A playground has been created where you can upload songs or choose samples form the FMA DataSet
 to visualize them
 * Features are extracted in the server in real-time and processed using the feature mapping techniques
 * Execute _api.py_ to run the PlayGround Server
 
-### Client
+#### Client
 * The PlayGround code has been built upon [three-seed](https://github.com/edwinwebb/three-seed/)
 It is written in ES6, managed with NPM and bundled with WebPack
 * [three.js](https://threejs.org/) has been used to create all the visualizations
