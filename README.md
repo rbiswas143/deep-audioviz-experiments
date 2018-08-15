@@ -85,3 +85,5 @@ It is written in ES6, managed with NPM and bundled with WebPack
 * [BGodefroyFR](https://github.com/BGodefroyFR/Deep-Audio-Visualization), for inspiring us to work in this domain
 * Amanda Glosson, for the visualization [Spinning Ball of Crystal](https://codepen.io/aglosson/pen/rVyRGm)
 * Sean Dempsy, for the visualization [Three Js Point Cloud Experiment](https://codepen.io/seanseansean/pen/EaBZEY)
+* Karim Maaloul, for the visualizations [Saturn](https://codepen.io/Yakudoo/pen/qbygaJ)
+ and [Psychedelic Waves](https://codepen.io/Yakudoo/pen/rJjOJx)
