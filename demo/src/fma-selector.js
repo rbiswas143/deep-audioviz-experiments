@@ -1,9 +1,4 @@
-let api_url = null;
-if (process.env.NODE_ENV === 'production') {
-  api_url = 'http://rhinomaster.mypi.co:9916';
-} else {
-  api_url = 'http://localhost:7000'
-}
+let api_url = `${process.env.api_host}:${process.env.api_port}`;
 
 import {fetchTracks} from "./client";
 

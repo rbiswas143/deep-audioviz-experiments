@@ -12,10 +12,11 @@
   "scripts": {
     "start": "webpack-dev-server --mode development",
     "prebuild": "rimraf ./build && mkdir ./build",
-    "build": "NODE_ENV=production && webpack --mode production"
+    "build": "webpack --mode production"
   },
   "dependencies": {
     "dat.gui": "^0.7.2",
+    "dotenv-webpack": "^1.5.7",
     "font-awesome": "^4.7.0",
     "jquery": "^3.3.1",
     "jquery-ui": "^1.12.1",
