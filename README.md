@@ -30,8 +30,11 @@ which are relatively small in size. Pre-trained state-of-the-art models lke VGG-
 ## Audio Visualizations
 
 ![VIZ-BAR](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/random2.png)
-![VIZ-REAL-1](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal1.png)
-![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal3.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/deterministic-vizreal1.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/crystals.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/point-clouds.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/psychedelic-waves.png)
+![VIZ-REAL-2](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/saturn.png)
 
 ## Code Setup Notes
 
@@ -87,3 +90,4 @@ It is written in ES6, managed with NPM and bundled with WebPack
 * Sean Dempsy, for the visualization [Three Js Point Cloud Experiment](https://codepen.io/seanseansean/pen/EaBZEY)
 * Karim Maaloul, for the visualizations [Saturn](https://codepen.io/Yakudoo/pen/qbygaJ)
  and [Psychedelic Waves](https://codepen.io/Yakudoo/pen/rJjOJx)
+* David Lyons, for the visualization [Codevember Storm](https://codepen.io/davidlyons/pen/KyXvjp)
