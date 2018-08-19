@@ -96,7 +96,7 @@ class ModelBase:
         """Loads the model weights and optimizer state"""
         if not os.path.isfile(path):
             return None
-        state = torch.load(path)
+        state = torch.load(path, map_location=self.device)
         self.model.load_state_dict(state['model'])
         self.optimizer.load_state_dict(state['optimizer'])
 
