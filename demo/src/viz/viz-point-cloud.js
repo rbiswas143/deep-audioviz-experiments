@@ -2,6 +2,7 @@ import THREE from "../three";
 
 import BaseViz from "./base-viz";
 
+// Point textures
 import flower1 from "../../assets/flower1_icon.png";
 import flower2 from "../../assets/flower2_icon.png";
 import flower3 from "../../assets/flower3_icon.png";
@@ -20,13 +21,13 @@ export default class VizPointCloud extends BaseViz {
       camFar: 3000,
       camZ: 1000,
       orbitalControls: true,
-      cloudSize: 1000,
-      numCloudGroups: 4,
+      cloudSize: 500,
+      numCloudGroups: 6,
       numCloudsPerGroup: 2,
-      pointMaxSize: 15,
+      pointMaxSize: 18,
       cloudMaxRad: 1000,
-      rotationSlowdown: 1000,
-      fogDensityLogRange: [-9, -2.5],
+      rotationSlowdown: 500,
+      fogDensityLogRange: [-7, -2],
       paused: false
     };
 
@@ -63,11 +64,16 @@ export default class VizPointCloud extends BaseViz {
       geometry.vertices.push(vertex);
     }
 
+    // All textures
     const sprites = [flower1, flower2, flower3, flower4,
       flower5, flower6, leaf1, leaf2, leaf3];
+
+    // Sprite rotation angles
     const rotAngles = [0, 0.25, 0.5, 0.75].map(n => 2 * Math.PI * n);
+
     for (let i = 0; i < this.vizParams.numCloudGroups; i++) {
       this.pointClouds.push([]);
+
       for (let j = 0; j < this.vizParams.numCloudsPerGroup; j++) {
 
         // Material with random size
@@ -114,12 +120,13 @@ export default class VizPointCloud extends BaseViz {
 
     const rotationFactor = 2 * Math.PI / this.vizParams.rotationSlowdown;
 
-    // Update Fog
+    // Update fog hue
     let fogHue = Math.floor(this.animParams[`fogHue`] * 360);
     let fogColor = new THREE.Color(`hsl(${fogHue}, 15%, 20%)`);
     this.scene.fog.color.set(fogColor);
-    this.renderer.setClearColor(fogColor);
+    this.renderer.setClearColor(fogColor); // Background color is same as fog color
 
+    // Update fog density
     const [densityRangeStart, densityRangeEnd] = this.vizParams.fogDensityLogRange;
     const densityExp = densityRangeStart + (this.animParams.fogDensity * (densityRangeEnd - densityRangeStart));
     this.scene.fog.density = Math.pow(10, densityExp);

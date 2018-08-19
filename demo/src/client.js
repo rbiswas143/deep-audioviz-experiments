@@ -1,64 +1,117 @@
-let api_url = `${process.env.api_host}:${process.env.api_port}`;
+// Prod api has the same origin
+export let api_url = '/api';
+if (process.env.mode === 'development') {
+  api_url = `${process.env.api_host}:${process.env.api_port}`
+}
 
-export function validate_request_data(data) {
-  let valid = true;
+const useLocalStorage = true;
 
-  // No empty fields
-  ['model', 'feature_mapping', 'feature_scaling', 'scaling_method', 'track'].forEach(key => {
-    if (!data[key]) {
-      valid = false;
-    }
-  });
+export default class Client {
+  constructor() {
+    // Form elements
+    this.modelSelect = document.getElementById("model-select");
+    this.ftMapSelect = document.getElementById("ft-map-select");
+    this.ftScaleSelect = document.getElementById("ft-scale-select");
+    this.ftScaleMethodSelect = document.getElementById("ft-scale-method-select");
 
-  // Disallowed combinations
-  if (data.feature_mapping === 'raw' && (data.model === 'alexnet' ||
-    (typeof(data.model) === 'string' && data.model.startsWith('vgg')))) {
-    alert('Sorry, Genre Classifiers cannot be used with Deterministic and Random Mapping.');
-    valid = false;
+    // Cache
+    this.cache = {}
   }
 
-  return valid;
-}
+  validate_request_data(data) {
+    let valid = true;
 
-export function parse_request_data(currTrack) {
+    // No empty fields
+    ['model', 'feature_mapping', 'feature_scaling', 'scaling_method', 'track'].forEach(key => {
+      if (!data[key]) {
+        valid = false;
+      }
+    });
 
-  // Form elements
-  const modelSelect = document.getElementById("model-select");
-  const ftMapSelect = document.getElementById("ft-map-select");
-  const ftScaleSelect = document.getElementById("ft-scale-select");
-  const ftScaleMethodSelect = document.getElementById("ft-scale-method-select");
+    // Disallowed combinations
+    if (data.feature_mapping === 'raw' && (data.model === 'alexnet' ||
+      (typeof(data.model) === 'string' && data.model.startsWith('vgg')))) {
+      alert('Sorry, Genre Classifiers cannot be used with Deterministic and Random Mapping.');
+      valid = false;
+    }
 
-  // Feature Mapping Options
-  return {
-    model: modelSelect.options[modelSelect.selectedIndex].getAttribute("model"),
-    classifier_layer: modelSelect.options[modelSelect.selectedIndex].getAttribute("layer"),
-    feature_mapping: ftMapSelect.options[ftMapSelect.selectedIndex].getAttribute("mapping"),
-    random: ftMapSelect.options[ftMapSelect.selectedIndex].getAttribute("random") === "true",
-    feature_scaling: ftScaleSelect.options[ftScaleSelect.selectedIndex].getAttribute("scaling"),
-    scaling_method: ftScaleMethodSelect.options[ftScaleMethodSelect.selectedIndex].getAttribute("method"),
-    track: currTrack.type === 'upload' ? currTrack.track : currTrack.track_id
-  };
-}
+    return valid;
+  }
 
-export function fetchData(data, onSuccess, onFailure) {
-  const formData = new FormData();
-  Object.keys(data).forEach(function (key) {
-    formData.append(key, data[key]);
-  });
+  parse_request_data(currTrack) {
 
-  fetch(`${api_url}/fetchmap`, {
-    method: "POST",
-    body: formData
-  })
-    .then(response => response.json())
-    .then(onSuccess, onFailure)
-}
+    // Feature Mapping Options
+    return {
+      model: this.modelSelect.options[this.modelSelect.selectedIndex].getAttribute("model"),
+      classifier_layer: this.modelSelect.options[this.modelSelect.selectedIndex].getAttribute("layer"),
+      feature_mapping: this.ftMapSelect.options[this.ftMapSelect.selectedIndex].getAttribute("mapping"),
+      random: this.ftMapSelect.options[this.ftMapSelect.selectedIndex].getAttribute("random") === "true",
+      feature_scaling: this.ftScaleSelect.options[this.ftScaleSelect.selectedIndex].getAttribute("scaling"),
+      scaling_method: this.ftScaleMethodSelect.options[this.ftScaleMethodSelect.selectedIndex].getAttribute("method"),
+      track: currTrack.type === 'upload' ? currTrack.track : currTrack.track_id
+    };
+  }
 
-export function fetchTracks(onSuccess, onFailure) {
+  _getCacheKey(data) {
+    let vals = [];
+    Object.keys(data).forEach(key => {
+      if (key !== 'track') vals.push(data[key]);
+    });
+    if (data.track instanceof File) {
+      vals = vals.concat(['name', 'lastModified', 'size', 'type'].map(attrib => data.track[attrib]));
+    } else {
+      vals.push(data.track);
+    }
+    const cache_key = vals.join('|');
+    console.log('Cache Key', cache_key);
+    return cache_key;
+  }
 
-  fetch(`${api_url}/fetchtracks`, {
-    method: "GET"
-  })
-    .then(response => response.json())
-    .then(onSuccess, onFailure)
+  _getCached(cacheKey) {
+    let cached = null;
+    if (cacheKey in this.cache) {
+      cached = this.cache[cacheKey];
+    } else if (useLocalStorage) {
+      cached = localStorage.getItem(cacheKey);
+    }
+    return cached;
+  }
+
+  _saveToCache(cacheKey, data) {
+    this.cache[cacheKey] = data;
+    if (useLocalStorage) {
+      localStorage.setItem(cacheKey, data);
+    }
+  }
+
+  fetchData(data, onSuccess, onFailure) {
+    const formData = new FormData();
+    Object.keys(data).forEach(function (key) {
+      formData.append(key, data[key]);
+    });
+
+    // Fetch cached
+    const cacheKey = this._getCacheKey(data);
+    const cachedData = this._getCached(cacheKey);
+    if (cachedData) {
+      new Promise(resolve => {
+        console.log('Returning cached data');
+        resolve(cachedData);
+      }).then(onSuccess);
+      return;
+    }
+
+    fetch(`${api_url}/fetchmap`, {
+      method: "POST",
+      body: formData
+    })
+      .then(response => response.json())
+      .then(featuresData => {
+        // Cache
+        console.log('Caching new data');
+        this._saveToCache(cacheKey, featuresData);
+        onSuccess(featuresData);
+      }, onFailure)
+  }
+
 }

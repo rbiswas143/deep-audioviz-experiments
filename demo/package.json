@@ -1,17 +1,15 @@
 {
-  "name": "three-seed",
+  "name": "deep-audioviz",
   "version": "0.3.1",
-  "description": "Three.js starter project boilerplate bundled with webpack",
+  "description": "Experiments with Deep Learning and Audio Visualizations",
   "keywords": [
     "webgl",
-    "boilerplate",
     "three.js",
     "es6",
     "webpack"
   ],
   "scripts": {
     "start": "webpack-dev-server --mode development",
-    "prebuild": "rimraf ./build && mkdir ./build",
     "build": "webpack --mode production"
   },
   "dependencies": {

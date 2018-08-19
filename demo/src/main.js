@@ -7,7 +7,7 @@ import AudioManager from './audio-manager';
 import * as Fullscreen from './fullscreen';
 import FMATrackSelector from './fma-selector';
 import VizBoxMessages from './messages';
-import * as client from './client';
+import Client from './client';
 import {vizMap} from './viz/all';
 import Mapper from './viz/mapper';
 import VizParamsReordering from './reorder-params';
@@ -22,6 +22,8 @@ class Main {
     // Global
     this.audioManager = new AudioManager();
     this.vizBoxMessages = new VizBoxMessages();
+    this.client = new Client();
+
     // init after user selection
     this.viz = null;
     this.mapper = null;
@@ -63,7 +65,7 @@ class Main {
       element: this.vizBox,
     });
 
-    // On fullscreen change event handling
+    // Add remove classes on fulscreen change
     Fullscreen.changeSuccessCallback(() => {
       const activated = Fullscreen.activated();
       if (activated) {
@@ -73,10 +75,9 @@ class Main {
         this.vizBox.classList.remove('viz-fullscreen');
         this.menuBox.classList.remove('viz-fullscreen');
       }
-      this.viz && this.viz.resize();
     });
 
-    // Track control
+    // Track control - fullscreen button
     document.getElementById('viz-control-fullscreen').onclick = () => {
       Fullscreen.toggle(this.vizBox);
     }
@@ -86,32 +87,37 @@ class Main {
 
     document.getElementById('go-btn').onclick = () => {
 
-      if (this.currTrack) {
+      if (this.currTrack) { // Track is selected, proceed to load features
 
+        // Validate form and get features from server
+        const requestData = this.client.parse_request_data(this.currTrack);
+        if (!this.client.validate_request_data(requestData)) return;
+
+        // Destroy everything
         this.destroy();
 
-        const requestData = client.parse_request_data(this.currTrack);
-        if (!client.validate_request_data(requestData)) return;
-
         this.vizBoxMessages.setLoading();
-        client.fetchData(
+        this.client.fetchData(
           requestData,
           featuresData => {
+            // Success: proceed to show viz
             this.vizBoxMessages.hide();
             this.start(requestData, featuresData);
           },
           error => {
+            // Failure: show error message
             this.vizBoxMessages.setError();
             console.log('Error:', error);
           }
         );
-      } else {
+      } else {// Track is not selected
         alert('Choose a track first.');
       }
     };
   }
 
   initFMATrackSelector() {
+    // On button click, update current track related info
     const fmaTrackSelector = new FMATrackSelector();
     fmaTrackSelector.fmaLoaderButton[0].onclick = () => {
       this.currTrack = fmaTrackSelector.getCurrFMATrack();
@@ -120,6 +126,7 @@ class Main {
   }
 
   initTrackUploader() {
+    // On file upload, upload current track related info
     const trackLoader = document.getElementById('track-loader');
     trackLoader.onchange = () => {
       if (trackLoader.files.length > 0) {
@@ -135,28 +142,23 @@ class Main {
   }
 
   initTrackControl() {
+    // Play and pause viz along with the track
     this.audioManager.onPause = () => {
       this.viz && (this.viz.vizParams.paused = true);
     };
-
     this.audioManager.onPlay = () => {
       this.viz && (this.viz.vizParams.paused = false);
     };
-
-    this.audioManager.onStop = () => {
-
-    }
-
   }
 
   initPostProcessing() {
-    // Exponentially Weighted Moving Average
+    // Exponentially Weighted Moving Average (update mapper)
     const expAvgSlider = document.getElementById('exp-avg');
     expAvgSlider.onchange = () => {
       this.mapper && this.mapper.updatePostProcessingOptions();
     };
 
-    // Linear Extrapolation
+    // Linear Extrapolation (update mapper)
     const extrapolCheckbox = document.getElementById('extrapol-checkbox');
     extrapolCheckbox.onchange = () => {
       this.mapper && this.mapper.updatePostProcessingOptions();
@@ -169,7 +171,7 @@ class Main {
 
   start(requestData, featuresData) {
 
-    // Detect WEBGL
+    // Detect webgl
     if (!Detector.webgl) {
       this.vizBoxMessages.updateMessage(true, Detector.getWebGLErrorMessage().outerHTML);
       return;
@@ -182,13 +184,14 @@ class Main {
       this.vizBoxMessages.setError();
     }
 
-    // Set up Viz Box
+    // Add class to viz box to set it up
     this.vizBox.classList.add('viz-active');
 
     // Viz and Mapper
     this.viz = new vizMap[vizCode](this.vizContainer);
     this.mapper = new Mapper(this.viz);
 
+    // Enable dat.gui [NOT USED]
     if (enableDatGUI) {
       let gui = new dat.GUI();
       for (let key in this.viz.animParams) {
@@ -208,15 +211,23 @@ class Main {
   }
 
   destroy() {
-    this.audioManager && this.audioManager.pause();
+    // Deactivate audio manager
+    this.audioManager.pause();
     this.audioManager.deactivate();
+
+    // Reset viz box
     this.vizBox.classList.remove('viz-active');
+
+    // Destroy viz
     this.viz && this.viz.destroy();
     this.viz = null;
+
+    // Destroy mapper
     this.mapper && (this.mapper.active = false);
     this.mapper = null;
   }
 
 }
 
+// Begin initialization on load
 window.onload = () => new Main();

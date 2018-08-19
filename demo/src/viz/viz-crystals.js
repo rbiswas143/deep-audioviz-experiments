@@ -18,7 +18,6 @@ export default class VizCrystals extends BaseViz {
       numCrystalGroups: 6,
       rotationSlowdown: 500,
       skyTexture: 'crystal',
-      shadow: false, // true not supported
       paused: false
     };
 

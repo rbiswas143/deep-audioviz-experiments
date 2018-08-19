@@ -1,3 +1,5 @@
+// Credits: https://codepen.io/Yakudoo/pen/rJjOJx
+
 // attributes of our mesh
 attribute vec3 position;
 attribute vec2 uv;

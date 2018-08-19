@@ -1,12 +1,12 @@
-let api_url = `${process.env.api_host}:${process.env.api_port}`;
-
-import {fetchTracks} from "./client";
+import {api_url} from "./client";
 
 import $ from 'jquery';
 import 'selectize';
 import '../node_modules/selectize/dist/css/selectize.css';
 
-// Value for All Tracks and All Genres, chose for alphabetical precedence
+const devMode = true;
+
+// Value for All Tracks and All Genres, chosen for alphabetical precedence
 const ALL = '(ALL)';
 
 export default class FMATrackSelector {
@@ -23,11 +23,19 @@ export default class FMATrackSelector {
 
 
     // Fetch FMA metadata from backend
-    fetchTracks(
+    this.fetchTracks(
       tracksData => this.onMetadataLoadSuccess(tracksData),
       error => this.onMetadataLoadFail(error)
     );
 
+  }
+
+  fetchTracks(onSuccess, onFailure) {
+    fetch(`${api_url}/fetchtracks`, {
+      method: "GET"
+    })
+      .then(response => response.json())
+      .then(onSuccess, onFailure)
   }
 
   onMetadataLoadSuccess(tracksData) {
@@ -47,6 +55,11 @@ export default class FMATrackSelector {
     });
     // Init Modal
     this.initModal();
+    // Dev Mode
+    if (devMode) {
+      document.getElementById('fma-loader-btn').click();
+      document.getElementById('go-btn').click();
+    }
   }
 
   initModal() {
@@ -125,6 +138,7 @@ export default class FMATrackSelector {
   }
 
   onMetadataLoadFail(error) {
+    // Disable FMA loader modal
     console.log("Error:", error);
     let els = document.querySelectorAll('.fma-metadata-fail');
     for (let i = 0; i < els.length; i++) {

@@ -65,7 +65,7 @@ class ProgressBar:
         self.update(self.total)
 
 
-def cached(key_fn=None):
+def cached(key_fn=lambda *a, **k: str(a + tuple(k.values()))):
     """Decorator for caching method outputs by key"""
 
     def args_wrap(fn):
@@ -142,7 +142,7 @@ def get_fma_genres(meta_dir):
     return fma_utils.load(os.path.join(meta_dir, 'genres.csv'))
 
 
-@cached(lambda *a, **k: str(a + tuple(k.values())))
+@cached()
 def get_genres_map(meta_dir, fma_type, reverse=False):
     """Gets unique genres from the FMA DataSet, deterministically assigns them indices, and returns a map"""
     tracks = get_fma_meta(meta_dir, fma_type)

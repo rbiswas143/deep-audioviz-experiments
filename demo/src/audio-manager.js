@@ -1,3 +1,6 @@
+/**
+ * Convert time in seconds to 'HH:MM'
+ */
 const numToTime = num => {
   let minutes = String(Math.min(99, Math.floor(num / 60)));
   let seconds = String(Math.round(num % 60));
@@ -9,6 +12,7 @@ const numToTime = num => {
 export default class AudioManager {
 
   constructor() {
+    // Audio element setup
     this.audio = new Audio();
     this.audio.preload = 'metadata';
     this.audio.crossOrigin = 'anonymous';
@@ -40,6 +44,7 @@ export default class AudioManager {
   }
 
   loadTrack(src, onloadedmetadata) {
+    // Use the callback to access track metadata, for example, duration
     this.audio.onloadedmetadata = onloadedmetadata;
     this.audio.src = src;
   }
@@ -55,35 +60,41 @@ export default class AudioManager {
   }
 
   play() {
-    if (this.paused) {
+    if (this.paused) {// Ignore otherwise
       this.audio.play();
       this.paused = false;
+      // Show pause button
       this.playButton.style.display = 'none';
       this.pauseButton.style.display = 'block';
+      // Callback
       this.onPlay && this.onPlay();
     }
   }
 
   pause() {
-    if (!this.paused) {
+    if (!this.paused) {// Ignore otherwise
       this.audio.pause();
       this.paused = true;
+      // Show play button
       this.pauseButton.style.display = 'none';
       this.playButton.style.display = 'block';
+      // Callback
       this.onPause && this.onPause();
     }
   }
 
   stop() {
-    if (this.active){
+    if (this.active){// Ignore otherwise
+      // Pause track and reset current time
       this.pause();
       this.audio.currentTime = 0;
+      // Callback
       this.onStop && this.onStop();
     }
   }
 
   initTrackControl() {
-    // Buttons
+    // Connect button actions to handlers
     this.playButton.onclick = () => this.play();
     this.pauseButton.onclick = () => this.pause();
     this.stopButton.onclick = () => this.stop();
@@ -94,14 +105,16 @@ export default class AudioManager {
     // Drag track bar
     this.trackBar.onmousedown = () => this.trackbarDrag = true;
     this.trackBar.onmouseup = () => {
-      if (this.active && this.audio.duration) {
-        this.audio.currentTime = this.audio.duration * this.trackBar.value;
+      if (this.active && this.audio.duration) {// Drag is only allowed when a track is active
+        this.audio.currentTime = this.audio.duration * this.trackBar.value; // trackbar range is [0, 1]
       }
       this.trackbarDrag = false;
     };
 
-    // Mouse events
+    // Reset user active timestamp on mouse move
     this.vizBox.onmousemove = () => this.active && (this.trackbar_timestamp = Date.now());
+
+    // Play/Pause on
     this.vizBox.onclick = () => this.active && (this.paused ? this.play() : this.pause());
     this.vizControl.ondblclick = ev => ev.stopPropagation();
     this.vizControl.onclick = ev => ev.stopPropagation();

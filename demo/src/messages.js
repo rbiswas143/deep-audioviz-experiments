@@ -1,10 +1,13 @@
 const message_loading = '<span>' +
-  '<i class="fa fa-2x fa-circle-o-notch fa-spin"></i>&nbsp;' +
   'Extracting features from the track...' +
+  '<br>' +
+  '<i class="fa fa-2x fa-circle-o-notch fa-spin"></i>&nbsp;' +
   '</span>';
 
-const message_error = 'Oops! Something went terribly wrong :,( ' +
-  '<br> Check your internet connection, perhaps?';
+const message_error = 'Oops! Something went terribly wrong ' +
+  '<i class="fa fa-2x fa-frown-o"></i>' +
+  '<br>' +
+  'Check your internet connection, perhaps?';
 
 
 export default class VizBoxMessages {
@@ -15,11 +18,13 @@ export default class VizBoxMessages {
   }
 
   updateMessage(show, message) {
+    // Toggle visibility
     if (show) {
       this.messageContainer.style.display = '';
     } else if (!show) {
       this.messageContainer.style.display = 'none';
     }
+    // Render new message
     if (message) {
       this.messageContainer.innerHTML = message;
     }

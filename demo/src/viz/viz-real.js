@@ -13,7 +13,9 @@ export default class VizReal extends BaseViz {
       camRad: 300,
       orbitalControls: true,
       skyRad: 500,
-      sphRadMax: 40,
+      skyShininess: 0,
+      skySpecular: '#000000',
+      sphRadMax: 70,
       sphPosMax: 300,
       sphPosMin: 0,
       camFreqFactor: 3,
@@ -39,7 +41,7 @@ export default class VizReal extends BaseViz {
     const ambient = new THREE.AmbientLight(0x999999);
     this.scene.add(ambient);
 
-    const light = new THREE.PointLight(0xffffff, 0.1);
+    const light = new THREE.PointLight(0xffffff, 1);
     light.position.set(0, 10, 0);
     if (this.vizParams.shadow) {
       light.castShadow = true;
@@ -75,6 +77,7 @@ export default class VizReal extends BaseViz {
   }
 
   animate(time) {
+    // Camera revolution
     if (!this.cache.hasOwnProperty('time')) {
       this.cache.time = time;
       this.cache.camAngle = 0;

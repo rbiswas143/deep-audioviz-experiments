@@ -11,29 +11,31 @@ export default class VizSaturn extends BaseViz {
       camFov: 75,
       camNear: 0.1,
       camFar: 2000,
-      camX: 600,
-      camY: 0,
+      camX: 800,
+      camY: 200,
       camZ: 0,
       orbitalControls: true,
       planetShapeDetail: 2,
-      planetMinRad: 120,
-      planetMaxRad: 200,
+      planetMinRad: 150,
+      planetMaxRad: 250,
       planetMorphMax: 60,
-      numDiscs: 6,
-      numParticlesPerGroup: 15,
+      numDiscs: 5,
+      numParticlesPerGroup: 10,
       rotationSlowdown: 300,
       discParticleMaxDetail: 2,
       discParticleMinRad: 10,
       discParticleMaxRad: 30,
-      discInnerRadMin: 200,
-      discInnerRadMax: 300,
-      discOuterRadMin: 300,
-      discOuterRadMax: 500,
+      discInnerRadMin: 400,
+      discInnerRadMax: 500,
+      discOuterRadMin: 500,
+      discOuterRadMax: 650,
       discParticleMinOscillation: 10,
-      discParticleMaxOscillation: 100,
+      discParticleMaxOscillation: 50,
+      discParticleOscillationFreq: 2.5,
       maxAxisTilt: 1,
-      skyRad: 800,
+      skyRad: 1000,
       skyShininess: 0,
+      skySpecular: '#000000',
       skyTexture: 'galaxy',
       paused: false
     };
@@ -60,7 +62,6 @@ export default class VizSaturn extends BaseViz {
 
     const light = new THREE.DirectionalLight(0xffffff, 1.5);
     light.position.set(200, 100, 200);
-    // light.castShadow = true;
     light.shadow.camera.left = -400;
     light.shadow.camera.right = 400;
     light.shadow.camera.top = 400;

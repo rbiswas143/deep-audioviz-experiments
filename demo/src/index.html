@@ -1,239 +1,279 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/html">
+
 <head>
     <meta charset="UTF-8">
+
     <title><%= htmlWebpackPlugin.options.title %></title>
+
+    <!--Style Sheets-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body style="visibility: hidden">
-<div id="main-box">
-    <div class="row">
-        <div id="viz-box">
-            <div id="viz-container">
 
-            </div>
-            <div id="message-box">
-                <h3>
-                    Welcome to Deep AudioViz
-                    <small>EXPERIMENTS</small>
-                </h3>
-                <br>
-                <small>
-                    <div>First, choose some Feature Mapping Parameters</div>
-                    <div>Then, pick an Audio Visualization</div>
-                    <div>Upload or Select a Track</div>
-                    <div>Hit <b>GO</b> !</div>
-                    <br>
-                    <div>(If you need some help, click on the
-                        <button type="button" class="btn-sm viz-help-btn"><i
-                                class="fa fa-2x fa-question-circle"></i></button>
-                        icons)
-                    </div>
-                </small>
-            </div>
-            <div id="viz-control">
-                <button id="viz-control-play" type="button" class="btn-smviz-label text-right"><i
-                        class="fa fa-play"></i>
-                </button>
-                <button id="viz-control-pause" type="button" class="btn-smviz-label text-right"><i
-                        class="fa fa-pause"></i>
-                </button>
-                <button id="viz-control-stop" type="button" class="btn-smviz-label text-right"><i
-                        class="fa fa-stop"></i>
-                </button>
-                <button id="viz-control-fullscreen" type="button" class="btn-smviz-label text-right"><i
-                        class="fa fa-arrows-alt"></i>
-                </button>
-                <div id="viz-control-time-elapsed">
-                    <div>00:00</div>
-                </div>
-                <div id="viz-control-time-left">
-                    <div>00:00</div>
-                </div>
-                <input type="range" min="0" max="1" step="0.001" value="0.0" id="viz-control-trackbar">
-            </div>
+<body style="visibility: hidden">
+
+<!-- Parent Container -->
+<div id="main-box">
+
+    <!-- Visualization Container + Controls-->
+    <div id="viz-box">
+
+        <!--Visualization Container-->
+        <div id="viz-container">
         </div>
 
-        <div id="menu-box">
-            <div class="container">
+        <!--Message Container-->
+        <div id="message-box">
+            <h3>
+                Welcome to Deep AudioViz
+                <small>EXPERIMENTS</small>
+            </h3>
+            <br>
+            <small>
+                <div>First, choose some Feature Mapping Parameters</div>
+                <div>Then, pick an Audio Visualization</div>
+                <div>Upload or Select a Track</div>
+                <div>Hit <b>GO</b> !</div>
+                <br>
+                <div>(If you need some help, click on the
+                    <button type="button" class="btn-sm viz-help-btn">
+                        <i class="fa fa-2x fa-question-circle"></i>
+                    </button>
+                    icons)
+                </div>
+            </small>
+        </div>
 
-                <div class="row">
-                    <div class="col-lg-12">
-                        <img id="logo">
-                        <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
-                                data-target="#primary-help"><i
-                                class="fa fa-2x fa-question-circle pull-right"></i></button>
+        <!--Visualization Control Container-->
+        <div id="viz-control">
+
+            <!--Play Button-->
+            <button id="viz-control-play" type="button" class="btn-smviz-label text-right"><i
+                    class="fa fa-play"></i>
+            </button>
+
+            <!--Pause Button-->
+            <button id="viz-control-pause" type="button" class="btn-smviz-label text-right"><i
+                    class="fa fa-pause"></i>
+            </button>
+
+            <!--Stop Button-->
+            <button id="viz-control-stop" type="button" class="btn-smviz-label text-right"><i
+                    class="fa fa-stop"></i>
+            </button>
+
+            <!--Fullscreen Button-->
+            <button id="viz-control-fullscreen" type="button" class="btn-smviz-label text-right"><i
+                    class="fa fa-arrows-alt"></i>
+            </button>
+
+            <!--Time elapsed-->
+            <div id="viz-control-time-elapsed">
+                <div>00:00</div>
+            </div>
+
+            <!--Time Remaining-->
+            <div id="viz-control-time-left">
+                <div>00:00</div>
+            </div>
+
+            <!--Track Bar/Slider-->
+            <input type="range" min="0" max="1" step="0.001" value="0.0" id="viz-control-trackbar">
+        </div>
+    </div>
+
+    <!-- Side Menu Container -->
+    <div id="menu-box">
+        <div class="container">
+
+            <!--LOGO-->
+            <div class="row">
+                <div class="col-lg-12">
+                    <img id="logo">
+                    <button type="button" class="btn-sm viz-help-btn" data-toggle="modal" data-target="#primary-help">
+                        <i class="fa fa-2x fa-question-circle pull-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!--Server Status-->
+            <div class="row">
+                <form id="server-status-form" class="form-inline col-lg-11 viz-form">
+                    <div class="form-group col-lg-6">
+                        <span>SERVER STATUS</span>
                     </div>
-                </div>
+                    <div class="form-group col-lg-6">
+                        <button id="server-status" type="button" class="btn-sm" data-toggle="tooltip"
+                                title="Server is not reachable :(">
+                            <i class="fa fa-2x fa-circle"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                <div class="row">
-                    <form id="server-status-form" class="form-inline col-lg-11 viz-form">
-                        <div class="form-group col-lg-6">
-                            <span>SERVER STATUS</span>
-                        </div>
-                        <div class="form-group col-lg-6">
-                            <button id="server-status" type="button" class="btn-sm" data-toggle="tooltip"
-                                    title="Server is not reachable :(">
-                                <i class="fa fa-2x fa-circle"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            <!--Feature Mapping Options-->
+            <div class="row">
+                <form class="form-inline col-lg-11 viz-form">
 
-                <div class="row">
-                    <form class="form-inline col-lg-11 viz-form">
+                    <div class="form-group col-lg-12">
+                        <h6>Choose Feature Mapping Options</h6>
+                        <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
+                                data-target="#options-help">
+                            <i class="fa fa-question-circle pull-right"></i>
+                        </button>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <h6>Choose Feature Mapping Options
-                            </h6>
-                            <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
-                                    data-target="#options-help"><i
-                                    class="fa fa-question-circle pull-right"></i></button>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <label for="ft-map-select" class="col-lg-5 viz-label text-right">Feature Mapping</label>
+                        <select id="ft-map-select" class="col-lg-7 form-control">
+                            <option mapping="raw">Deterministic</option>
+                            <option mapping="raw" random="true">Random</option>
+                            <option mapping="pca">PCA</option>
+                            <option mapping="kmeans">K-Means</option>
+                            <option mapping="kmeans-pca">K-Means + PCA</option>
+                        </select>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="ft-map-select" class="col-lg-5 viz-label text-right">Feature Mapping</label>
-                            <select id="ft-map-select" class="col-lg-7 form-control">
-                                <option mapping="raw">Deterministic</option>
-                                <option mapping="raw" random="true">Random</option>
-                                <option mapping="pca">PCA</option>
-                                <option mapping="kmeans">K-Means</option>
-                                <option mapping="kmeans-pca">K-Means + PCA</option>
-                            </select>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <label for="model-select" class="col-lg-5 viz-label text-right">DL Architecture</label>
+                        <select id="model-select" class="col-lg-7 form-control">
+                            <option model="conv_ae_not_shared">Autoencoder</option>
+                            <option model="conv_ae_shared">Autoencoder w/ Shared Weights</option>
+                            <option model="conv_ae_skip">Autoencoder w/ Skip Connections</option>
+                            <option model="alexnet" layer="L6">Alexnet</option>
+                            <option model="vgg11" layer="L8">VGG-11</option>
+                            <option model="vgg13" layer="L10">VGG-13</option>
+                            <option model="vgg16" layer="L13">VGG-16 (Layer 13)</option>
+                            <option model="vgg16" layer="L14">VGG-16 (Layer 14)</option>
+                            <option model="vgg16" layer="L15">VGG-16 (Layer 15)</option>
+                        </select>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="model-select" class="col-lg-5 viz-label text-right">DL Architecture</label>
-                            <select id="model-select" class="col-lg-7 form-control">
-                                <option model="conv_ae_not_shared">Autoencoder</option>
-                                <option model="conv_ae_shared">Autoencoder w/ Shared Weights</option>
-                                <option model="conv_ae_skip">Autoencoder w/ Skip Connections</option>
-                                <option model="alexnet" layer="L6">Alexnet</option>
-                                <option model="vgg11" layer="L8">VGG-11</option>
-                                <option model="vgg13" layer="L10">VGG-13</option>
-                                <option model="vgg16" layer="L13">VGG-16 (Layer 13)</option>
-                                <option model="vgg16" layer="L14">VGG-16 (Layer 14)</option>
-                                <option model="vgg16" layer="L15">VGG-16 (Layer 15)</option>
-                            </select>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <label for="ft-scale-select" class="col-lg-5 viz-label text-right">Scaling Mode</label>
+                        <select id="ft-scale-select" class="col-lg-7 form-control">
+                            <option scaling="features">Scales by features</option>
+                            <option scaling="across">Scale across features</option>
+                        </select>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="ft-scale-select" class="col-lg-5 viz-label text-right">Scaling Mode</label>
-                            <select id="ft-scale-select" class="col-lg-7 form-control">
-                                <option scaling="features">Scales by features</option>
-                                <option scaling="across">Scale across features</option>
-                            </select>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <label for="ft-scale-method-select" class="col-lg-5 viz-label text-right">Scaling
+                            Method</label>
+                        <select id="ft-scale-method-select" class="col-lg-7 form-control">
+                            <option method="standard">Standard Normalizations</option>
+                            <option method="minmax">Minmax Normalization</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="ft-scale-method-select" class="col-lg-5 viz-label text-right">Scaling
-                                Method</label>
-                            <select id="ft-scale-method-select" class="col-lg-7 form-control">
-                                <option method="standard">Standard Normalizations</option>
-                                <option method="minmax">Minmax Normalization</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
+            <!--Visualization Selector-->
+            <div class="row">
+                <form class="form-inline col-lg-11 viz-form">
 
-                <div class="row">
-                    <form class="form-inline col-lg-11 viz-form">
+                    <div class="form-group col-lg-12">
+                        <h6>Pick a Visualization
+                        </h6>
+                        <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
+                                data-target="#viz-help">
+                            <i class="fa fa-question-circle pull-right"></i>
+                        </button>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <h6>Pick a Visualization
-                            </h6>
-                            <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
-                                    data-target="#viz-help"><i
-                                    class="fa fa-question-circle pull-right"></i></button>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <label for="viz-select" class="col-lg-5 viz-label text-right">Visualization</label>
+                        <select id="viz-select" class="col-lg-7 form-control">
+                            <option value="viz-storm">Storm</option>
+                            <option value="viz-bar">VIZ-BAR</option>
+                            <option value="viz-real">VIZ-REAL</option>
+                            <option value="viz-crystals">Crystals</option>
+                            <option value="viz-point-cloud">Point Clouds</option>
+                            <option value="viz-psychedelic">Psychedelic Waves</option>
+                            <option value="viz-saturn">Saturn</option>
+                        </select>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="viz-select" class="col-lg-5 viz-label text-right">Visualization</label>
-                            <select id="viz-select" class="col-lg-7 form-control">
-                                <option value="viz-bar">VIZ-BAR</option>
-                                <option value="viz-real">VIZ-REAL</option>
-                                <option value="viz-point-cloud">Point Clouds</option>
-                                <option value="viz-saturn">Saturn</option>
-                                <option value="viz-psychedelic">Psychedelic Waves</option>
-                                <option value="viz-crystals">Crystals</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-lg-3">
-                        </div>
-                        <div class="form-group col-lg-6">
-                            <button id="viz-params-reorder-btn" type="button" class="btn col-lg-12 viz-button-small"
-                                    data-toggle="modal"
-                                    data-target="#viz-params-ordering-modal">Reorder Visual Parameters
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="row">
-                    <form class="form-inline col-lg-11 viz-form">
+                    <!--Dummy div for offset-->
+                    <div class="form-group col-lg-3">
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <h6>Choose a Track
-                            </h6>
-                            <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
-                                    data-target="#tracks-help"><i
-                                    class="fa fa-question-circle pull-right"></i></button>
-                        </div>
+                    <div class="form-group col-lg-6">
+                        <button id="viz-params-reorder-btn" type="button" class="btn col-lg-12 viz-button-small"
+                                data-toggle="modal" data-target="#viz-params-ordering-modal">Reorder Visual Parameters
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                        <div class="form-group col-lg-5">
-                            <button type="button" class="btn col-lg-12 viz-button-small"
-                                    onclick="document.getElementById('track-loader').click()">Upload a Track
-                            </button>
-                            <input id="track-loader" type="file" accept="audio/*" style="display: none">
-                        </div>
+            <!--Track Selector-->
+            <div class="row">
+                <form class="form-inline col-lg-11 viz-form">
 
-                        <div class="form-group col-lg-2">
-                            <h6>OR</h6>
-                        </div>
+                    <div class="form-group col-lg-12">
+                        <h6>Choose a Track</h6>
+                        <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
+                                data-target="#tracks-help">
+                            <i class="fa fa-question-circle pull-right"></i>
+                        </button>
+                    </div>
 
-                        <div class="form-group col-lg-5">
-                            <button type="button" class="btn col-lg-12 viz-button-small" data-toggle="modal"
-                                    data-target="#fma-track-select-modal">Select from FMA
-                            </button>
-                        </div>
+                    <!--Hidden input with proxy button-->
+                    <div class="form-group col-lg-5">
+                        <button type="button" class="btn col-lg-12 viz-button-small"
+                                onclick="document.getElementById('track-loader').click()">Upload a Track
+                        </button>
+                        <input id="track-loader" type="file" accept="audio/*" style="display: none">
+                    </div>
 
-                        <div class="form-group col-lg-7 text-center viz-track-info">
-                            <div class="col-lg-12">
-                                <h6 class="col-lg-12">Selected Track</h6>
-                                <div class="col-lg-12" id="selected-track-info">Not Selected</div>
-                            </div>
-                        </div>
-                        <!--<div class="col-lg-5"></div>-->
-                        <div class="col-lg-5 text-center">
-                            <button id="go-btn" type="button" class="btn">GO
-                            </button>
-                        </div>
+                    <div class="form-group col-lg-2">
+                        <h6>OR</h6>
+                    </div>
 
-                    </form>
-                </div>
+                    <div class="form-group col-lg-5">
+                        <button type="button" class="btn col-lg-12 viz-button-small" data-toggle="modal"
+                                data-target="#fma-track-select-modal">Select from FMA
+                        </button>
+                    </div>
 
-                <div class="row">
-                    <form class="form-inline col-lg-11 viz-form">
-                        <div class="form-group col-lg-12">
-                            <h6>Post-Processing</h6>
-                            <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
-                                    data-target="#post-processing-help"><i
-                                    class="fa fa-question-circle pull-right"></i></button>
+                    <div class="form-group col-lg-7 text-center viz-track-info">
+                        <div class="col-lg-12">
+                            <h6 class="col-lg-12">Selected Track</h6>
+                            <div class="col-lg-12" id="selected-track-info">Not Selected</div>
                         </div>
-                        <div class="form-group col-lg-12">
-                            <label for="extrapol-checkbox" class="col-lg-7 viz-label text-right">Extrapolate
-                                Parameters</label>
-                            <input type="checkbox" id="extrapol-checkbox" class="form-control pull-left" checked>
-                        </div>
+                    </div>
 
-                        <div class="form-group col-lg-12">
-                            <label for="exp-avg" class="col-lg-7 viz-label text-right">Average out Parameters</label>
-                            <input type="range" min="0" max="1" step="0.1" value="0.5" id="exp-avg"
-                                   class="col-lg-5 form-control">
-                        </div>
+                    <div class="col-lg-5 text-center">
+                        <button id="go-btn" type="button" class="btn">GO
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                    </form>
-                </div>
+            <!--Post Processing-->
+            <div class="row">
+                <form class="form-inline col-lg-11 viz-form">
 
+                    <div class="form-group col-lg-12">
+                        <h6>Post-Processing</h6>
+                        <button type="button" class="btn-sm viz-help-btn" data-toggle="modal"
+                                data-target="#post-processing-help">
+                            <i class="fa fa-question-circle pull-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-group col-lg-12">
+                        <label for="extrapol-checkbox" class="col-lg-7 viz-label text-right">Extrapolate
+                            Parameters</label>
+                        <input type="checkbox" id="extrapol-checkbox" class="form-control pull-left" checked>
+                    </div>
+
+                    <div class="form-group col-lg-12">
+                        <label for="exp-avg" class="col-lg-7 viz-label text-right">Average out Parameters</label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.5" id="exp-avg"
+                               class="col-lg-5 form-control">
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -307,10 +347,12 @@
                 <div class="container">
                     <div class="row">
                         <div class="col-lg-12 text-justify">
-                            Following are the Visual Parameters for the visualization
-                            <span class="curr-viz-name"></span>.
-                            You can reorder these parameters to decide which visual component gets mapped to which
-                            feature component. Hit GO when you are done.
+                            Following are the visual elements for the visualization
+                            <span class="curr-viz-name"></span>
+                            and the feature components to which they are mapped. You can drag the parameters to change
+                            the mapping. This can be especially useful with the feature mapping techniques that involve
+                            Principal Component Analysis as the initial components of the audio features will exhibit
+                            more variance and the mapped visual elements will consequently be more dynamic
                         </div>
                         <small class="col-lg-12">
                             <ol id="viz-params-list">
@@ -352,14 +394,11 @@
                     <div class="row">
                         <div class="col-lg-12 text-justify">
                             This is a demo of our work on creating Audio Visualizations using features extracted from
-                            songs using Deep Learning architectures.
-                            We have used Autoencoders and Genre Classifiers to extract audio features and then employed
-                            several techniques to map the raw audio
-                            features to 10 parameters that are then used to drive the Audio Visualizations. Play around
-                            with the options, upload your own track
-                            or choose from the FMA DataSet and see the results in several available Visualisations. Get
-                            to know more about this project using
-                            the links below:
+                            songs using Deep Learning architectures. We have used Autoencoders and Genre Classifiers to
+                            extract audio features and then employed several techniques to map the raw audio features to
+                            10 parameters that are then used to drive Audio Visualizations. Play around with the
+                            options, upload your own track or choose from the FMA DataSet and see the results in several
+                            available Audio Visualisations. Get to know more about this project using the links below:
                         </div>
                         <small class="col-lg-6 text-center" style="margin: 20px auto">
                             View our code on <a
@@ -396,23 +435,19 @@
                         <div class="col-lg-12 text-justify">
                             <p>
                                 In general, each song is broken down into small segments and pre-processed. Then we
-                                extract features
-                                for each segment using a Neural Network. The raw features are mapped to the parameters
-                                of the visualizations
-                                using a mapping technique and scaled to reasonable values. There are several ways to go
-                                about this. You can play with some of the parameters here:
+                                extract features for each segment using a Neural Network. The raw features are mapped to
+                                parameters of the visualizations using a mapping technique and scaled to reasonable
+                                values. There are several ways to go about this. You can play with some of the
+                                parameters here:
                             </p>
                         </div>
                         <div class="col-lg-12">
                             <h6>Deep Learning (DL) Architecture</h6>
                             <p>
                                 We have used some Autoencoders and Genre Classifiers. Autoencoders are trained for input
-                                reconstruction and
-                                hence they capture characteristic features of music and typically result in dynamic
-                                visualizations. Genre
-                                Classifiers (VGG, AlexNet), capture genre-specific features and result in varied visual
-                                experiences across
-                                musical genres
+                                reconstruction and hence they capture characteristic features of music and typically
+                                result in dynamic visualizations. Genre Classifiers (VGG, AlexNet), capture
+                                genre-specific features and result in varied visual experiences across musical genres
                             </p>
                         </div>
                         <div class="col-lg-12">
@@ -425,18 +460,14 @@
                                     extracted features are high dimensional)
                                 </li>
                                 <li><b>Random Mapping</b> works same as above, except that they are mapped at random.
-                                    Each
-                                    time you will see a completely
-                                    different visualization of the same song!
+                                    Each time you will see a completely different visualization of the same song!
                                 </li>
                                 <li><b>PCA Mapping</b> transforms the feature space into its principal components.
-                                    Expect to see more
-                                    dynamicity in the first few visual elements
+                                    Expect to see more dynamicity in the first few visual elements
                                 </li>
                                 <li><b>K-Means Mapping</b> clusters the features space, finding similarities between the
-                                    features
-                                    and emphasizing them. This technique will yield different visual experiences across
-                                    songs
+                                    features and emphasizing them. This technique will yield different visual
+                                    experiences across songs
                                 </li>
                                 <li><b>K-Means + PCA Mapping</b> combines the goodness of the previous 2 techniques
                                 </li>
@@ -447,22 +478,18 @@
                             <h6>Scaling Mode</h6>
                             <p>
                                 The mapped features have 10 components each which are scaled between 0 and 1 before
-                                using them as
-                                visual parameters. Scaling can either be done <b>By Features</b> to scale each feature
-                                component
-                                independently or <b>Across Features</b> to scale across all the feature components and
-                                preserve their
-                                relative distributions
+                                using them as visual parameters. Scaling can either be done <b>By Features</b> to scale
+                                each feature component independently or <b>Across Features</b> to scale across all the
+                                feature components and preserve their relative distributions
                             </p>
                         </div>
                         <div class="col-lg-12">
                             <h6>Scaling Method</h6>
                             <p>
                                 Both <b>MinMax Normalization</b> and <b>Standard Normalization</b> scale the features
-                                between 0 and 1
-                                but the former suppresses the distribution in the presence outliers while the latter
-                                scales the standard
-                                distribution of the feature space well and involves clipping of values outside the range
+                                between 0 and 1 but the former suppresses the distribution in the presence outliers
+                                while the latter scales the standard distribution of the feature space well and involves
+                                clipping of values outside the range
                             </p>
                         </div>
                     </div>
@@ -506,22 +533,39 @@
                         <div class="col-lg-12">
                             <ul>
                                 <li><b>Crystals</b> consists of groups of crystals changing in size along with the
-                                    track [Credits to Amanda Glosson: <a href="https://codepen.io/aglosson/pen/rVyRGm">
-                                        ORIGINAL</a>]
+                                    track
+                                    [Credits to Amanda Glosson:
+                                    <a href="https://codepen.io/aglosson/pen/rVyRGm">ORIGINAL</a>
+                                    ]
                                 </li>
                                 <li><b>Point Cloud</b> involves clouds of points of variable sizes and textures in a
-                                    foggy setup all parameterized by the audio track [Credits to Sean Dempsy <a
-                                            href="https://codepen.io/seanseansean/pen/EaBZEY">ORIGINAL</a>]
-                                </li>
-                                <li><b>Saturn</b> is a depiction of the planet Saturn with a disc made of oscillating
-                                    particles [Credits to Karim Maaloul <a
-                                            href="https://codepen.io/Yakudoo/pen/qbygaJ">ORIGINAL</a>]
+                                    foggy setup all parameterized by the music
+                                    [Credits to Sean Dempsy
+                                    <a href="https://codepen.io/seanseansean/pen/EaBZEY">ORIGINAL</a>
+                                    ]
                                 </li>
                                 <li><b>Psychedelic Waves</b> is as shader with dynamic psychedelic patterns
-                                     [Credits to Karim Maaloul <a
-                                            href="https://codepen.io/Yakudoo/pen/rJjOJx">ORIGINAL</a>]
+                                    [Credits to Karim Maaloul
+                                    <a href="https://codepen.io/Yakudoo/pen/rJjOJx">ORIGINAL</a>
+                                    ]
+                                </li>
+                                <li><b>Saturn</b> is a depiction of the planet Saturn with a disc made of oscillating
+                                    particles
+                                    [Credits to Karim Maaloul
+                                    <a href="https://codepen.io/Yakudoo/pen/qbygaJ">ORIGINAL</a>
+                                    ]
+                                </li>
+                                <li><b>Storm</b> combines various elements of a stormy scene like lightning, rain,
+                                    clouds and a tornado
+                                    [Credits to David Lyons
+                                    <a href="https://codepen.io/davidlyons/pen/KyXvjp">ORIGINAL</a>
+                                    ]
                                 </li>
                             </ul>
+                        </div>
+                        <div class="col-lg-12 text-justify">
+                            You can also view all the parameterized visual elements of the visualizations and change
+                            their ordering by clicking on <b>Reorder Visual Parameters</b>
                         </div>
                     </div>
                 </div>
@@ -547,9 +591,10 @@
                 <div class="container">
                     <div class="row">
                         <div class="col-lg-12 text-justify">
-                            You can upload any track from your own computer (Formats Supported: mp3, m4a, wav) or select
-                            a 30 second clip of any track from the FMA DataSet (which we have used to train the Neural
-                            Networks). If you wish to go with the latter, you can filter songs by Genre and Artist
+                            You can upload any track from your own computer (Formats Supported: aac, au, flac, m4a, mp3,
+                            ogg, wav) or select a 30 second clip of a track from the FMA DataSet (which we have
+                            used to train the Neural Networks). If you wish to go with the latter, you can also make use
+                            of the Genre and Artist filters to select a track
                         </div>
                     </div>
                 </div>
@@ -581,12 +626,13 @@
                         </div>
                         <div class="col-lg-12">
                             <ul>
-                                <li><b>Extrapolate Parameters</b> linearly at nay given time using the parameters of the
+                                <li><b>Extrapolate Parameters</b> linearly at any given time using the parameters of the
                                     current and next segments and the time elapsed in the current segment
                                 </li>
                                 <li><b>Average out Parameters</b> over the previous segments using exponentially
                                     weighted moving averages using an appropriate smoothing factor. Smoothing factor
-                                    with value 0 corresponds absolute smoothing while 1 corresponds to no smoothing
+                                    with value 1 (maximum) corresponds absolute smoothing while 0 (minimum) corresponds
+                                    to no smoothing
                                 </li>
                             </ul>
                         </div>

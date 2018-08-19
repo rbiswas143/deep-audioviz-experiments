@@ -1,5 +1,4 @@
 import $ from 'jquery';
-
 require('../node_modules/jquery-ui/ui/widgets/sortable');
 
 import {vizMap} from "./viz/all";
@@ -7,14 +6,16 @@ import {vizMap} from "./viz/all";
 export default class VizParamsReordering {
 
   constructor() {
+    // Modal UI Elements
     this.$vizSelect = $("#viz-select");
-    this.$vizParamsList = $('#viz-params-list').sortable();
+    this.$vizParamsList = $('#viz-params-list').sortable(); // Making the list sortable
     this.$vizNameSpan = $('.curr-viz-name');
     this.$vizSelect.change(() => this.updateVizParams());
     this.updateVizParams();
   }
 
   updateVizParams() {
+    // Update modal for the current visualization
     const vizName = this.$vizSelect.find('option:selected').text();
     this.$vizNameSpan.text(vizName);
     const vizCode = this.$vizSelect.val();

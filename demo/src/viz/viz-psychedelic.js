@@ -65,7 +65,6 @@ export default class VizPsychedelic extends BaseViz {
     this.material = new THREE.RawShaderMaterial({
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
-
       uniforms: {
         uTime: {type: 'f', value: 0},
         uHue: {type: 'f', value: .5},
@@ -91,17 +90,20 @@ export default class VizPsychedelic extends BaseViz {
     this.plane.material.uniforms.uDensity.value = this.animParams.density;
     this.plane.material.uniforms.uDisplacement.value = this.animParams.displacement;
 
+    // Saturation and Brightness
     this.plane.material.uniforms.uSaturation.value = this.vizParams.saturationMin +
       ((this.vizParams.saturationMax - this.vizParams.saturationMin) * this.animParams.saturation);
     this.plane.material.uniforms.uBrightness.value = this.vizParams.brightMin +
       ((this.vizParams.brightMax - this.vizParams.brightMin) * this.animParams.brightness);
 
+    // Colors
     this.plane.material.uniforms.uColorG.value = this.animParams.color;
     this.plane.material.uniforms.uColorB.value = 1 - this.animParams.color;
 
-    this.timer += this.animParams.speed;
-    this.plane.material.uniforms.uTime.value = this.timer;
+    // Speed
+    this.plane.material.uniforms.uTime.value += this.animParams.speed;
 
+    // Distortion
     this.plane.material.uniforms.uMousePosition.value = new THREE.Vector2(this.animParams.wavesX, this.animParams.wavesY);
   }
 }

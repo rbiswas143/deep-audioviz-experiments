@@ -1,3 +1,5 @@
+// Credits: https://codepen.io/Yakudoo/pen/rJjOJx
+
 precision highp float;
 
 uniform float uTime;

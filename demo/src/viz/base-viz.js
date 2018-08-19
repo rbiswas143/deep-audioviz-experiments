@@ -53,10 +53,14 @@ export default class BaseViz {
 
   initOrbitControls() {
     if (this.vizParams.orbitalControls) {
-      var controls = new THREE.OrbitControls(
+      const controls = new THREE.OrbitControls(
         this.camera,
         this.renderer.domElement
       );
+      if (this.vizParams.orbitalControlsTarget) {
+        const t = this.vizParams.orbitalControlsTarget;
+        controls.target.set(t[0], t[1], t[2]);
+      }
       controls.addEventListener("change", () => {
         this.renderer.render(this.scene, this.camera);
       });
@@ -72,7 +76,8 @@ export default class BaseViz {
     this.resize();
     if (this.vizParams.paused) return;
 
-    var time = new Date().getTime() / 1000;
+    // Single clock for all components
+    const time = new Date().getTime() / 1000;
     this.animate(time);
 
     this.renderer.render(this.scene, this.camera);
@@ -82,12 +87,12 @@ export default class BaseViz {
     this.container.innerHTML = '';
   }
 
-  resize(force) {
+  resize() {
+    // Fit viz to canvas
     const canvas = this.renderer.domElement;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
-
-    if (force || canvas.width !== width || canvas.height !== height) {
+    if (canvas.width !== width || canvas.height !== height) {
       this.renderer.setSize(width, height, false);
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();

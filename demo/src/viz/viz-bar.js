@@ -8,7 +8,8 @@ export default class VizBar extends BaseViz {
       camFov: 40,
       camNear: 0.1,
       camFar: 20000,
-      camY: 45,
+      camY: 30,
+      camZ: 30,
       orbitalControls: true,
       numBars: 10,
       maxBarSize: 50,
@@ -26,6 +27,9 @@ export default class VizBar extends BaseViz {
       bar9: 0.03,
       bar10: 0.5
     };
+
+    // Camera
+    this.camera.lookAt(0, 0, 0);
 
     // Renderer
     this.renderer.setClearColor(0x333F47, 1);
@@ -50,7 +54,7 @@ export default class VizBar extends BaseViz {
       ['bar7', 'Bar 7 Length'],
       ['bar8', 'Bar 8 Length'],
       ['bar9', 'Bar 9 Length'],
-      ['bar10', 'Bar 10 Lengtht']
+      ['bar10', 'Bar 10 Length']
     ]
   }
 

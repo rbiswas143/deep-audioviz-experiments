@@ -54,9 +54,9 @@ module.exports = (env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         hash: true,
-        title: "Deep Audio Viz",
+        title: "Deep AudioViz Experiments",
         template: "./src/index.html",
-        filename: path.join(__dirname, buildPath, "index.html") //relative to root of the application
+        filename: path.join(__dirname, buildPath, "index.html")
       }),
       new Dotenv({
         path: `./.env.${argv.mode === "production" ? "prod" : "dev"}`,

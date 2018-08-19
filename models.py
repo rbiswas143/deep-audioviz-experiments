@@ -37,15 +37,12 @@ trained_model_configs = {
 # For classifiers, the activations of these layers are used to get extract encodings
 encoding_layer_options = {
     'vgg16': {
-        'L14': ('features', 43),
-        'L15': ('classifier', 1),
-        'L16': ('classifier', 4),
-        'L17': ('classifier', 6),
+        'L13': ('features', 43),
+        'L14': ('classifier', 1),
+        'L15': ('classifier', 4),
     },
     'vgg13': {
         'L10': ('features', 34),
-        'L13': ('classifier', 6),
-
     },
     'vgg11': {
         'L8': ('features', 28)
