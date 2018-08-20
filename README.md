@@ -16,13 +16,13 @@ it is possible to use a genre classifier to create visualizations that vary acro
 
 ## Feature Extractors
 
-![Autoencoder Architectur](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/ae.png)
-An Autoendoer was employed to extract features from small segments of audio tracks. The output of the encoder, of size 10,
+![Autoencoder Architecture](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/ae.png)
+An Autoencoder was employed to extract features from small segments of audio tracks. The output of the encoder, of size 10,
 is extracted, processed further and finally mapped to parameters that drive audio visualizations. The Autoencoder architecture
 has been experimented in three setups: normal, shared weights between the encoder and decoder, and skip connections from the encoder
 to the decoder. The features obtained from Autoencoders produce dynamic visualizations changing throughout the track
 
-![Autoencoder Architectur](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/alexnet.png)
+![Autoencoder Architecture](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/alexnet.png)
 Genre Classifiers were also used to extract genre-specific features and create audio visualizations that vary across
 musical genres. For ease of computation, features were extracted from the final few layers of the genre classifiers
 which are relatively small in size. Pre-trained state-of-the-art models lke VGG-16 and AlexNet have been trained for
