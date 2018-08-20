@@ -56,7 +56,8 @@ module.exports = (env, argv) => {
         hash: true,
         title: "Deep AudioViz Experiments",
         template: "./src/index.html",
-        filename: path.join(__dirname, buildPath, "index.html")
+        filename: path.join(__dirname, buildPath, "index.html"),
+	favicon: "assets/favicon.ico"
       }),
       new Dotenv({
         path: `./.env.${argv.mode === "production" ? "prod" : "dev"}`,
