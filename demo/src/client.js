@@ -4,7 +4,7 @@ if (process.env.mode === 'development') {
   api_url = `${process.env.api_host}:${process.env.api_port}`
 }
 
-const useLocalStorage = true;
+const useLocalStorage = false;
 
 export default class Client {
   constructor() {
@@ -72,7 +72,7 @@ export default class Client {
     if (cacheKey in this.cache) {
       cached = this.cache[cacheKey];
     } else if (useLocalStorage) {
-      cached = localStorage.getItem(cacheKey);
+      cached = JSON.parse(localStorage.getItem(cacheKey));
     }
     return cached;
   }
@@ -80,7 +80,7 @@ export default class Client {
   _saveToCache(cacheKey, data) {
     this.cache[cacheKey] = data;
     if (useLocalStorage) {
-      localStorage.setItem(cacheKey, data);
+      localStorage.setItem(cacheKey, JSON.stringify(data));
     }
   }
 

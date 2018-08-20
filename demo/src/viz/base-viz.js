@@ -64,6 +64,7 @@ export default class BaseViz {
       controls.addEventListener("change", () => {
         this.renderer.render(this.scene, this.camera);
       });
+      controls.update();
     }
   }
 

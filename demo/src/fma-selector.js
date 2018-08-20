@@ -4,7 +4,7 @@ import $ from 'jquery';
 import 'selectize';
 import '../node_modules/selectize/dist/css/selectize.css';
 
-const devMode = true;
+const devMode = false;
 
 // Value for All Tracks and All Genres, chosen for alphabetical precedence
 const ALL = '(ALL)';
