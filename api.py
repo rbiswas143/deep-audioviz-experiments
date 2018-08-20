@@ -75,6 +75,7 @@ def fetch_map():
 
     # Configs
     train_config = train.TrainingConfig.load_from_file(request_config.train_config_path)
+    train_config.model_params['pretrained'] = False  # avoid loading pre-trained weights
     dataset_config = dp.DataPrepConfig.load_from_dataset(train_config.dataset_path)
     dataset_mode = dp.read_h5_attrib('mode', dataset_config.get_dataset_path())
 
