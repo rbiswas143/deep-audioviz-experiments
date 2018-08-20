@@ -12,6 +12,7 @@ import fma_utils
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.contrib.fixers import ProxyFix
 import os
 import json
 import logging
@@ -49,6 +50,7 @@ server_config = ServerConfig.load_from_file('private/server_config.json')
 # Server configuration
 app = Flask(__name__)
 CORS(app)
+app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = server_config.secret
 app.config['server_config'] = server_config
 
