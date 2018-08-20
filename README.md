@@ -11,7 +11,7 @@ techniques for improving the quality of the visualizations. We have also shown t
 it is possible to use a genre classifier to create visualizations that vary across musical genres
 
 * [Read more about our work](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/paper.pdf)
-* [Visit the PlayGround](https://rbiswas143.github.io/deep-audioviz-experiments/)
+* [Visit the PlayGround](https://www.rhino9571.xyz:12503/)
 
 
 ## Feature Extractors
