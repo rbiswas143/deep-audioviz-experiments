@@ -85,7 +85,8 @@ class Main {
 
   initGoButton() {
 
-    document.getElementById('go-btn').onclick = () => {
+    const goBtn = document.getElementById('go-btn');
+    goBtn.onclick = () => {
 
       if (this.currTrack) { // Track is selected, proceed to load features
 
@@ -96,6 +97,7 @@ class Main {
         // Destroy everything
         this.destroy();
 
+        goBtn.disabled = true;
         this.vizBoxMessages.setLoading();
         this.client.fetchData(
           requestData,
@@ -109,7 +111,7 @@ class Main {
             this.vizBoxMessages.setError();
             console.log('Error:', error);
           }
-        );
+        ).finally(() => goBtn.disabled = false);
       } else {// Track is not selected
         alert('Choose a track first.');
       }

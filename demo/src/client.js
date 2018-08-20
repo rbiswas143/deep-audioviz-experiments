@@ -94,14 +94,13 @@ export default class Client {
     const cacheKey = this._getCacheKey(data);
     const cachedData = this._getCached(cacheKey);
     if (cachedData) {
-      new Promise(resolve => {
+      return new Promise(resolve => {
         console.log('Returning cached data');
         resolve(cachedData);
       }).then(onSuccess);
-      return;
     }
 
-    fetch(`${api_url}/fetchmap`, {
+    return fetch(`${api_url}/fetchmap`, {
       method: "POST",
       body: formData
     })
