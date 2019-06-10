@@ -1,5 +1,7 @@
 # Deep Audio Viz Experiemnts
 
+**UPDATE: Our paper has been published in *Multimedia Tools and Applications, Springer*. Read it [here](https://rdcu.be/9cE9)**
+
 Conventionally, audio visualizations are created using techniques in Digital Signal Processing.
 The approach is limited to the ability of hand-designing audio features.
 We address this problem by using Convolutional Deep Neural Network architectures, 
@@ -10,8 +12,8 @@ for generating visualizations that are dynamic and synchronous with music and fu
 techniques for improving the quality of the visualizations. We have also shown that
 it is possible to use a genre classifier to create visualizations that vary across musical genres
 
-* [Read more about our work](https://github.com/rbiswas143/deep-audioviz-experiments/blob/master/rsrcs/paper.pdf)
-* [Visit the PlayGround](https://www.rhino9571.xyz:12503/)
+* [Read more about our work](https://rdcu.be/9cE9)
+* [Visit the PlayGround](https://www.rhino9571.xyz:12503/) (Sorry, the PlayGround is currently down. I'll restore it soon)
 
 
 ## Feature Extractors
