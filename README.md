@@ -50,11 +50,11 @@ and install all dependencies from _reqirements.txt_
 * The FMA DataSet can be converted into MFCCs or kept as audio frames for end to end training.
 The DataSet can, optionally, be split into partitions if it is too big to fit in memory
 * All pre-processing code is defined in _data_processor.py_
-* [Download](https://github.com/mdeff/fma) the FMA DataSet at the following locations
+* [Download](https://github.com/mdeff/fma) the FMA DataSet to the following locations
   * /datasets/fma/fma_metadata
   * /datasets/fma/fma_small
   * /datasets/fma/fma_medium (optional)
-* Create a JSON file to configure pre-processing (See example files at _datasets/processed/samples_)
+* Create a JSON file to configure pre-processing (See example files in _datasets/processed/samples_)
 * Run pre-processing using the CLI provided by _data_processor.py_
 
 #### Training
