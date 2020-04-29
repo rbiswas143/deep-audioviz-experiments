@@ -16,7 +16,7 @@
     "dat.gui": "^0.7.2",
     "dotenv-webpack": "^1.5.7",
     "font-awesome": "^4.7.0",
-    "jquery": "^3.3.1",
+    "jquery": "^3.5.0",
     "jquery-ui": "^1.12.1",
     "popper.js": "^1.14.4",
     "selectize": "^0.12.6",
